@@ -123,7 +123,7 @@ to_upload <- function(value, ext, dir, stem = "input", kind = "FASTA") {
         if (!length(value)) {
             arg_error(sprintf("The %s input is empty.", kind))
         }
-        gz <- length(value) >= 2L && identical(value[1:2], GZIP_MAGIC)
+        gz <- length(value) >= 2L && identical(value[seq_len(2L)], GZIP_MAGIC)
         return(write_upload(dir, upload_name(stem, ext, gz),
             function(path) writeBin(value, path)))
     }

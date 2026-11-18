@@ -280,9 +280,9 @@ new_idempotency_key <- function() {
     bytes[7] <- bitwOr(bitwAnd(bytes[7], 0x0f), 0x40)
     bytes[9] <- bitwOr(bitwAnd(bytes[9], 0x3f), 0x80)
     hex <- sprintf("%02x", bytes)
-    paste(paste(hex[1:4], collapse = ""), paste(hex[5:6], collapse = ""),
-        paste(hex[7:8], collapse = ""), paste(hex[9:10], collapse = ""),
-        paste(hex[11:16], collapse = ""), sep = "-")
+    groups <- rep(seq_len(5L), c(4L, 2L, 2L, 2L, 6L))
+    paste(vapply(split(hex, groups), paste, "", collapse = ""),
+        collapse = "-")
 }
 
 # Send one API call and decode it; signal a plasticdb_error on failure. On an
