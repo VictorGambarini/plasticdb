@@ -1,0 +1,69 @@
+url: https://victorgambarini.github.io/plasticdb-r/
+
+template:
+  bootstrap: 5
+
+development:
+  mode: auto
+
+home:
+  title: R client for the PlasticDB plastic biodegradation database
+  links:
+  - text: PlasticDB
+    href: https://v2.plasticdb.org
+  - text: Python client (plasticdb-py)
+    href: https://victorgambarini.github.io/plasticdb-py/
+
+news:
+  cran_dates: false
+
+articles:
+- title: Articles
+  navbar: ~
+  contents:
+  - plasticdb
+  - reproducible
+
+reference:
+- title: Client and provenance
+  desc: The client object, what answered a call, the citation, and conversion helpers.
+  contents:
+  - plasticdb_client
+  - provenance
+  - last_response
+  - server_version
+  - cite
+  - as_aastringset
+- title: Releases
+  contents: releases
+- title: Proteins
+  contents: proteins
+- title: Variants
+  contents: variants
+- title: Microorganisms
+  contents: microorganisms
+- title: Plastics
+  contents: plastics
+- title: Papers
+  contents: papers
+- title: Evidence
+  desc: The evidence spine, from interaction to experiment to observation.
+  contents: evidence
+- title: Search
+  contents: search_hits
+- title: Pathways
+  contents: pathways
+- title: Stats and changes
+  contents:
+  - stats_summary
+  - changes
+- title: Downloads
+  contents: downloads
+- title: Jobs
+  desc: Server-side analyses (an API key is required).
+  contents:
+  - jobs
+  - job_results
+- title: Conditions
+  desc: Classed errors and warnings.
+  contents: plasticdb-conditions
