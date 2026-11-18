@@ -60,7 +60,9 @@ test_that("a merged accession names its survivor, or follows it", {
         err <- expect_error(proteins_get("PBGQPC"), class = "plasticdb_merged")
         expect_s3_class(err, "plasticdb_gone")
         expect_identical(err$merged_into, "PBMW9H")
-        expect_identical(err$location, "/api/v1/proteins/PBMW9H")
+        expect_match(err$location, "^/api/v1/proteins/PBMW9H")
+        expect_identical(err$reason, "merged")
+        expect_identical(err$kind, "wild_type")
         expect_warning(p <- proteins_get("PBGQPC", follow_merges = TRUE),
             class = "plasticdb_merged_warning")
     })
@@ -78,6 +80,50 @@ test_that("a variant's accession returns the variant", {
     expect_false(is.null(v$variant_name))
     expect_identical(err$accession, "PBDTZX")
     expect_identical(err$location, "/api/v1/variants/PBDTZX")
+    expect_identical(err$reason, "engineered_variant")
+    expect_s3_class(err, "plasticdb_not_found")
+    expect_identical(err$status, 404L)
+})
+
+test_that("a merged protein's tables point at the survivor's", {
+    local_clean_env()
+    httptest2::with_mock_api({
+        err <- expect_error(proteins_kinetics("PBGQPC", limit = 2),
+            class = "plasticdb_merged")
+    })
+    expect_identical(err$merged_into, "PBMW9H")
+    expect_match(err$location, "^/api/v1/proteins/PBMW9H/kinetics")
+})
+
+test_that("a variant's accession gives the variant's FASTA and structure", {
+    local_clean_env()
+    calls <- local_api(function(req) {
+        if (grepl("/proteins/", req$url)) {
+            return(json_response(list(detail = "variant",
+                accession = "PBDTZX", reason = "engineered_variant",
+                kind = "engineered", location = "/api/v1/variants/PBDTZX"),
+                status = 404L))
+        }
+        httr2::response(status_code = 200L, headers = list(
+            `content-type` = "text/plain"), body = charToRaw(">PBDTZX v\nMK\n"))
+    })
+    fasta <- proteins_fasta("PBDTZX")
+    pdb <- proteins_structure("PBDTZX")
+    expect_match(fasta, "^>PBDTZX")
+    expect_match(pdb, "PBDTZX")
+    expect_identical(sub("^.*/api/v1", "", calls$urls), c(
+        "/proteins/PBDTZX/fasta", "/variants/PBDTZX/fasta",
+        "/proteins/PBDTZX/structure", "/variants/PBDTZX/structure"))
+})
+
+test_that("variant records and FASTA are pinnable", {
+    local_clean_env()
+    calls <- local_api(function(req) json_response(list(accession = "PBDTZX",
+        variant_name = "x"), release = "2026.30", source = "snapshot"))
+    client <- plasticdb_client(release = "2026.30", cache = FALSE)
+    v <- variants_get("PBDTZX", client = client)
+    expect_identical(query_of(calls$urls[[1]])$release, "2026.30")
+    expect_identical(provenance(v)$release_source, "snapshot")
 })
 
 test_that("interactions come at three levels", {
@@ -147,7 +193,9 @@ test_that("variants: list, get, merges and withdrawals", {
         expect_error(variants_get("PBG3V3"), class = "plasticdb_merged")
         expect_warning(v <- variants_get("PBG3V3", follow_merges = TRUE),
             class = "plasticdb_merged_warning")
-        expect_error(variants_get("PB8B8P"), class = "plasticdb_not_found")
+        gone <- expect_error(variants_get("PB8B8P"), class = "plasticdb_gone")
+        expect_identical(gone$reason, "withdrawn")
+        expect_identical(gone$accession, "PB8B8P")
         vo <- variants_of("PBFCTW", limit = 2)
     })
     expect_true(all(vl$kind == "engineered"))

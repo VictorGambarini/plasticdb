@@ -87,7 +87,7 @@ test_that("provenance() of the client names the release and versions", {
     local_clean_env()
     local_api(function(req) {
         if (grepl("/health", req$url)) {
-            return(json_response(list(status = "ok", version = "2.85.0")))
+            return(json_response(list(status = "ok", version = "2.87.0")))
         }
         json_response(page(list(list(id = 1L))), release = "2026.30",
             source = "snapshot")
@@ -101,7 +101,7 @@ test_that("provenance() of the client names the release and versions", {
     expect_identical(prov$data_license, "CC BY 4.0")
     expect_identical(prov$sdk_version,
         as.character(utils::packageVersion("plasticdb")))
-    expect_identical(prov$server_version, "2.85.0")
+    expect_identical(prov$server_version, "2.87.0")
     expect_error(provenance(list()), class = "plasticdb_argument_error")
 })
 

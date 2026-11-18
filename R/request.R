@@ -1,7 +1,12 @@
 RELEASE_HEADER <- "x-plasticdb-release"
 RELEASE_SOURCE_HEADER <- "x-plasticdb-release-source"
 UNAVAILABLE_HEADER <- "x-plasticdb-snapshot-unavailable"
+SHA256_HEADER <- "x-plasticdb-sha256"
+SOURCE_SHA256_HEADER <- "x-plasticdb-source-sha256"
+IDEMPOTENCY_HEADER <- "Idempotency-Key"
+REPLAYED_HEADER <- "idempotent-replayed"
 RETRY_STATUS <- c(500L, 502L, 503L, 504L)
+IDEMPOTENT_METHODS <- c("GET", "HEAD", "PUT", "DELETE", "OPTIONS")
 
 # Query parameters as strings: NULL/NA dropped, logicals lower-case, dates ISO.
 query_value <- function(value) {
@@ -55,14 +60,27 @@ prepare_request <- function(client, endpoint, params, path_params) {
     list(method = endpoint$method, url = url, pinned = pinned)
 }
 
-build_httr2 <- function(client, method, url, follow_redirects = FALSE) {
+# `body` is list(json = <list>) or list(multipart = <list of fields>);
+# `headers` a named list of extra request headers.
+build_httr2 <- function(client, method, url, follow_redirects = FALSE,
+                        headers = list(), body = NULL) {
     req <- httr2::request(url)
     req <- httr2::req_method(req, method)
     req <- httr2::req_user_agent(req, user_agent())
     req <- httr2::req_headers(req, Accept = "application/json")
+    if (length(headers)) {
+        req <- httr2::req_headers(req, !!!headers)
+    }
     if (!is.null(client$api_key)) {
         req <- httr2::req_auth_bearer_token(req, client$api_key)
     }
+    if (!is.null(body$json)) {
+        req <- httr2::req_body_json(req, body$json, auto_unbox = TRUE,
+            null = "null", digits = NA)
+    } else if (!is.null(body$multipart)) {
+        req <- httr2::req_body_multipart(req, !!!body$multipart)
+    }
+    req <- httr2::req_method(req, method)
     req <- httr2::req_options(req, followlocation = as.integer(
         follow_redirects))
     req <- httr2::req_timeout(req, client$timeout)
@@ -71,19 +89,30 @@ build_httr2 <- function(client, method, url, follow_redirects = FALSE) {
 
 # Send with retries. 429 and transient 5xx wait for Retry-After (or back off)
 # when that is within max_retry_wait; connection errors back off. A 503
-# `not_mounted` will not fix itself, so it is answered at once.
-send_request <- function(client, req, path = NULL) {
+# `not_mounted` (or a sequence search's 504 `timeout`) will not fix itself, so
+# it is answered at once.
+#
+# A GET (or any `retry_safe` request: a search, or a submission whose
+# Idempotency-Key makes a repeat return the first result) is resent on a
+# connection error, a 5xx and a 429. Any other POST is resent only when it
+# never reached the server (it could not connect) or on a 429, which the
+# server refused unprocessed.
+send_request <- function(client, req, path = NULL, retry_safe = NULL) {
+    if (is.null(retry_safe)) {
+        retry_safe <- toupper(req$method %||% "GET") %in% IDEMPOTENT_METHODS
+    }
     attempt <- 0L
     repeat {
         resp <- tryCatch(httr2::req_perform(req, path = path),
             httr2_failure = function(e) e)
         if (inherits(resp, "httr2_failure")) {
-            if (attempt < client$max_retries) {
+            msg <- conditionMessage(resp)
+            if (attempt < client$max_retries &&
+                (retry_safe || never_sent(resp))) {
                 pdb_sleep(backoff(client, attempt))
                 attempt <- attempt + 1L
                 next
             }
-            msg <- conditionMessage(resp)
             if (grepl("timed? ?out|timeout", msg, ignore.case = TRUE)) {
                 pdb_abort("timeout", paste("Request timed out:", msg),
                     parent = resp)
@@ -95,7 +124,8 @@ send_request <- function(client, req, path = NULL) {
             return(resp)
         }
         status <- httr2::resp_status(resp)
-        retryable <- status %in% RETRY_STATUS && !is_permanent(resp)
+        retryable <- retry_safe && status %in% RETRY_STATUS &&
+            !is_permanent(resp)
         if (status != 429L && !retryable) {
             return(resp)
         }
@@ -109,6 +139,17 @@ send_request <- function(client, req, path = NULL) {
     }
 }
 
+# A connection failure before anything was sent (the request cannot have
+# reached the server).
+never_sent <- function(failure) {
+    msg <- paste(conditionMessage(failure),
+        conditionMessage(failure$parent %||% failure))
+    pattern <- paste("resolve host|resolve proxy|Failed to connect|",
+        "connection refused|Couldn't connect|Could not connect", sep = "")
+    grepl(pattern, msg, ignore.case = TRUE) &&
+        !grepl("timed? ?out|timeout", msg, ignore.case = TRUE)
+}
+
 backoff <- function(client, attempt) {
     delay <- client$backoff_factor * 2^attempt
     min(delay + stats::runif(1, 0, delay / 4), client$max_retry_wait)
@@ -119,13 +160,17 @@ pdb_sleep <- function(seconds) {
     Sys.sleep(seconds)
 }
 
+PERMANENT <- c("503 not_mounted", "504 timeout")
+
 is_permanent <- function(resp) {
-    if (httr2::resp_status(resp) != 503L) {
+    status <- httr2::resp_status(resp)
+    if (!status %in% c(503L, 504L)) {
         return(FALSE)
     }
     body <- tryCatch(parse_json_body(response_bytes(resp)),
         error = function(e) NULL)
-    is.list(body) && identical(body$reason, "not_mounted")
+    reason <- if (is.list(body)) body_text_field(body, "reason")
+    !is.null(reason) && paste(status, reason) %in% PERMANENT
 }
 
 #' Seconds to wait from a Retry-After header (delta-seconds or HTTP-date)
@@ -204,21 +249,54 @@ decode_response <- function(status, headers, bytes, url, from_cache = FALSE) {
     } else {
         bytes
     }
-    unavailable <- headers[[UNAVAILABLE_HEADER]] %||% ""
-    unavailable <- trimws(strsplit(unavailable, ",", fixed = TRUE)[[1]])
     list(status = status, data = data, headers = headers, url = url,
         release = clean(headers[[RELEASE_HEADER]]),
         release_source = clean(headers[[RELEASE_SOURCE_HEADER]]),
-        unavailable_fields = unavailable[nzchar(unavailable)],
+        unavailable_fields = header_list(headers[[UNAVAILABLE_HEADER]]),
+        etag = clean(headers[["etag"]]),
+        sha256 = clean(headers[[SHA256_HEADER]]),
+        source_sha256 = header_list(headers[[SOURCE_SHA256_HEADER]]),
+        replayed = identical(tolower(headers[[REPLAYED_HEADER]] %||% ""),
+            "true"),
         from_cache = from_cache, retrieved_at = Sys.time())
 }
 
-# Send one API call and decode it; signal a plasticdb_error on failure.
+header_list <- function(value) {
+    parts <- trimws(strsplit(value %||% "", ",", fixed = TRUE)[[1]])
+    parts[nzchar(parts)]
+}
+
+# Whether a request to `endpoint` may be resent after it reached the server:
+# a GET, a search that creates nothing, or a create operation that honours
+# Idempotency-Key when the client has a credential (the server keeps keys per
+# user and ignores them on anonymous requests).
+retry_safe_for <- function(client, endpoint) {
+    endpoint$method %in% IDEMPOTENT_METHODS || endpoint$retry_safe ||
+        (endpoint$idempotency && !is.null(client$api_key))
+}
+
+new_idempotency_key <- function() {
+    bytes <- as.integer(openssl::rand_bytes(16))
+    bytes[7] <- bitwOr(bitwAnd(bytes[7], 0x0f), 0x40)
+    bytes[9] <- bitwOr(bitwAnd(bytes[9], 0x3f), 0x80)
+    hex <- sprintf("%02x", bytes)
+    groups <- rep(seq_len(5L), c(4L, 2L, 2L, 2L, 6L))
+    paste(vapply(split(hex, groups), paste, "", collapse = ""),
+        collapse = "-")
+}
+
+# Send one API call and decode it; signal a plasticdb_error on failure. On an
+# `idempotency` endpoint every attempt carries the same Idempotency-Key.
 pdb_request <- function(client, endpoint, params = list(),
                         path_params = list(), follow_redirects = FALSE,
-                        record = TRUE) {
+                        record = TRUE, body = NULL, idempotency_key = NULL) {
     client <- check_client(client)
     prep <- prepare_request(client, endpoint, params, path_params)
+    headers <- list()
+    if (endpoint$idempotency) {
+        headers[[IDEMPOTENCY_HEADER]] <- idempotency_key %||%
+            new_idempotency_key()
+    }
     cache_key <- NULL
     if (!is.null(client$cache_dir) && prep$method == "GET" &&
         !is.null(prep$pinned)) {
@@ -231,8 +309,10 @@ pdb_request <- function(client, endpoint, params = list(),
             return(result)
         }
     }
-    req <- build_httr2(client, prep$method, prep$url, follow_redirects)
-    resp <- send_request(client, req)
+    req <- build_httr2(client, prep$method, prep$url, follow_redirects,
+        headers = headers, body = body)
+    resp <- send_request(client, req,
+        retry_safe = retry_safe_for(client, endpoint))
     status <- httr2::resp_status(resp)
     headers <- response_headers(resp)
     bytes <- response_bytes(resp)
@@ -281,8 +361,11 @@ announce <- function(client, result) {
 #'
 #' The status, headers, URL and release of the last request this session
 #' made, for checking what answered (`release`, `release_source`, which is
-#' `"snapshot"` for a past release and `"live"` for the live database, and
-#' `unavailable_fields`, the fields a release does not carry).
+#' `"snapshot"` for a past release and `"live"` for the live database,
+#' `unavailable_fields`, the fields a release does not carry, `etag`,
+#' `sha256` (a release artefact's own SHA-256), `source_sha256` (the release
+#' Parquet files a pinned download was rendered from) and `replayed` (a
+#' submission's `Idempotency-Key` returned an existing job).
 #'
 #' @return A list, or `NULL` before the first request.
 #' @seealso [provenance()]

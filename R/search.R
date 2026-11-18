@@ -4,8 +4,9 @@
 #' searched, so a pinned client gets `plasticdb_release_live_only`).
 #'
 #' * `search_hits()` returns ranked hits, one row each, with `entity_type`
-#'   (`protein`, `microorganism`, `plastic`, `paper`, ...), `route_key` (the
-#'   accession or id to pass to the matching `*_get()` function) and `rank`.
+#'   (`protein`, `microorganism`, `plastic`, `paper`, ...), `route_key` (a
+#'   string: the accession or id to pass to the matching `*_get()` function;
+#'   a variant's is its accession, for [variants_get()]) and `rank`.
 #'   (It is not called `search()`, which would mask [base::search()].)
 #' * `search_grouped()` returns the top `limit` hits (at most 100) for each
 #'   record type: a list with the overall `total`, a `groups` tibble (each
@@ -30,7 +31,21 @@ NULL
 #' @rdname search_hits
 #' @export
 search_hits <- function(q, limit = Inf, client = plasticdb_client()) {
-    list_tibble(client, ENDPOINTS$search, list(q = q), limit = limit)
+    route_keys_as_text(list_tibble(client, ENDPOINTS$search, list(q = q),
+        limit = limit))
+}
+
+# Every route_key is a string (the server sends them so since 2.86).
+route_keys_as_text <- function(tbl) {
+    if ("route_key" %in% names(tbl)) {
+        keys <- tbl[["route_key"]]
+        if (is.list(keys)) {
+            keys <- vapply(keys, function(k) if (length(k))
+                as.character(k[[1]]) else NA_character_, "")
+        }
+        tbl[["route_key"]] <- as.character(keys)
+    }
+    tbl
 }
 
 #' @rdname search_hits
@@ -50,7 +65,7 @@ search_grouped <- function(q, limit = 10, client = plasticdb_client()) {
         lapply(groups[[name]]$items, function(item) c(list(group = name), item))
     }), recursive = FALSE)
     out <- list(total = data$total, scope = data$scope, groups = summary,
-        hits = records_to_tibble(hits %||% list()))
+        hits = route_keys_as_text(records_to_tibble(hits %||% list())))
     as_record(out, client, result)
 }
 
@@ -63,7 +78,8 @@ search_autocomplete <- function(q, client = plasticdb_client()) {
         if (!is.list(data[[kind]]) || is_object(data[[kind]])) return(list())
         lapply(data[[kind]], function(hit) c(list(entity_type = kind), hit))
     }), recursive = FALSE)
-    with_provenance(records_to_tibble(rows %||% list()), client, result)
+    with_provenance(route_keys_as_text(records_to_tibble(rows %||% list())),
+        client, result)
 }
 
 #' Degradation pathways
@@ -149,7 +165,9 @@ pathways_graph <- function(plastic_id, pathway_id = NULL,
 #'   country; both as a named list of tibbles.
 #'
 #' @inheritParams proteins
-#' @param evidence_scope `"organism_or_enzyme"` or `"whole_organism"`.
+#' @param evidence_scope `"organism_or_enzyme"` or `"whole_organism"`;
+#'   `stats_summary()` also takes `"enzyme_only"` (count only the organisms
+#'   credited through an enzyme).
 #'
 #' @return A `plasticdb_record` list, or a named list of tibbles.
 #' @name stats_summary
@@ -163,7 +181,7 @@ NULL
 #' @rdname stats_summary
 #' @export
 stats_summary <- function(evidence_scope = c("organism_or_enzyme",
-                                "whole_organism"),
+                                "whole_organism", "enzyme_only"),
                             client = plasticdb_client()) {
     get_record(client, ENDPOINTS$stats,
         list(evidence_scope = match.arg(evidence_scope)))

@@ -116,3 +116,89 @@ test_that("the dataset ZIP waits while it is being built", {
     expect_identical(basename(path), "plasticdb_dataset.zip")
     expect_true(120 %in% sleeps$waits)
 })
+
+csv_response <- function(status = 200L, body = "id,name\n1,PET\n",
+                            headers = list()) {
+    httr2::response(status_code = status, headers = c(list(
+        `content-type` = "text/csv",
+        `x-plasticdb-release` = "2026.30",
+        `x-plasticdb-release-source` = "snapshot",
+        etag = "W/\"2026.30-abc\""), headers),
+        body = if (status == 200L) charToRaw(body) else raw())
+}
+
+test_that("a cached pinned download is revalidated with its ETag", {
+    local_clean_env()
+    dir <- withr::local_tempdir()
+    cache <- withr::local_tempdir()
+    seen <- list()
+    calls <- local_api(function(req) {
+        seen[[length(seen) + 1L]] <<- req$headers
+        if (length(seen) == 1L) {
+            return(csv_response(headers = list(
+                `x-plasticdb-source-sha256` = "aa, bb")))
+        }
+        csv_response(304L)
+    })
+    client <- plasticdb_client(release = "2026.30", cache = cache)
+    first <- downloads_plastics(file.path(dir, "a.csv"), client = client)
+    expect_identical(last_response()$etag, "W/\"2026.30-abc\"")
+    expect_identical(last_response()$source_sha256, c("aa", "bb"))
+    second <- downloads_plastics(file.path(dir, "b.csv"), client = client)
+    expect_length(calls$urls, 2)
+    expect_identical(seen[[2]][["If-None-Match"]], "W/\"2026.30-abc\"")
+    expect_identical(readLines(second), readLines(first))
+    expect_true(last_response()$from_cache)
+})
+
+test_that("an unreachable server falls back to the cached copy", {
+    local_clean_env()
+    local_no_sleep()
+    dir <- withr::local_tempdir()
+    cache <- withr::local_tempdir()
+    n <- 0
+    local_api(function(req) {
+        n <<- n + 1
+        if (n == 1) return(csv_response())
+        stop(structure(class = c("httr2_failure", "error", "condition"),
+            list(message = "Could not resolve host", call = NULL)))
+    })
+    client <- plasticdb_client(release = "2026.30", cache = cache,
+        max_retries = 0)
+    downloads_plastics(file.path(dir, "a.csv"), client = client)
+    expect_warning(path <- downloads_plastics(file.path(dir, "b.csv"),
+        client = client), class = "plasticdb_cache_fallback")
+    expect_identical(readLines(path), c("id,name", "1,PET"))
+})
+
+test_that("an artefact is checked against the server's SHA-256 too", {
+    local_clean_env()
+    dir <- withr::local_tempdir()
+    content <- charToRaw("abc")
+    sha <- plasticdb:::sha256_bytes(content)
+    local_api(function(req) {
+        if (grepl("/artefacts/", req$url)) {
+            return(httr2::response(status_code = 200L, headers = list(
+                `content-type` = "application/octet-stream",
+                `x-plasticdb-sha256` = strrep("f", 64)), body = content))
+        }
+        json_response(release_record(sha))
+    })
+    err <- expect_error(downloads_release_file("parquet/p.parquet", dir,
+        release = "2026.30"), class = "plasticdb_checksum")
+    expect_identical(err$expected, strrep("f", 64))
+    expect_match(conditionMessage(err), "the server's")
+})
+
+test_that("the dataset ZIP's 503 is JSON with a reason", {
+    local_clean_env()
+    local_no_sleep()
+    dir <- withr::local_tempdir()
+    local_api(function(req) json_response(list(detail = "building",
+        reason = "archive_unavailable"), status = 503L,
+        headers = list(`retry-after` = "120")))
+    err <- expect_error(downloads_dataset(dir),
+        class = "plasticdb_service_unavailable")
+    expect_identical(err$reason, "archive_unavailable")
+    expect_identical(err$retry_after, 120)
+})

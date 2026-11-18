@@ -6,5 +6,5 @@ structure(list(method = "GET", url = "pdb/microorganisms/names",
         `content-length` = "25122"), class = "httr2_headers"), 
     body = charToRaw("[{\"id\":2751,\"name\":\"Abortiporus biennis\"},{\"id\":3616,\"name\":\"Absidia\"},{\"id\":2924,\"name\":\"Absidia glauca\"}]"), 
     timing = c(redirect = 0, namelookup = 3.8e-05, connect = 3.8e-05, 
-    pretransfer = 0.000154, starttransfer = 0.076883, total = 0.079035
+    pretransfer = 0.000147, starttransfer = 0.054242, total = 0.055206
     ), cache = new.env(parent = emptyenv())), class = "httr2_response")

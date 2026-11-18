@@ -5,6 +5,6 @@ structure(list(method = "GET", url = "pdb/plastics/names", status_code = 200L,
         vary = "Accept-Encoding", `x-plasticdb-release-source` = "live", 
         `content-length` = "1437"), class = "httr2_headers"), 
     body = charToRaw("[{\"id\":143,\"name\":\"(PCL)2-b-PEG-b-(PCL)2\"},{\"id\":126,\"name\":\"ABS\"},{\"id\":127,\"name\":\"ABS/SAN blend\"}]"), 
-    timing = c(redirect = 0, namelookup = 3.6e-05, connect = 3.6e-05, 
-    pretransfer = 0.000154, starttransfer = 0.036199, total = 0.036513
+    timing = c(redirect = 0, namelookup = 3.8e-05, connect = 3.8e-05, 
+    pretransfer = 0.000148, starttransfer = 0.0168, total = 0.016912
     ), cache = new.env(parent = emptyenv())), class = "httr2_response")

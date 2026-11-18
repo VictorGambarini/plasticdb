@@ -50,15 +50,22 @@ lists, an \link[Biostrings:AAStringSet]{Biostrings::AAStringSet}, or text.
 }
 \description{
 Engineered variants of wild-type proteins: their mutations, engineering
-method and evidence. Records are live only (a pinned client gets
-\code{plasticdb_release_live_only}); lists also work on a pinned release.
+method and evidence. Records, FASTA and lists answer a pinned release too;
+only the structure is live only (a pinned client gets
+\code{plasticdb_release_live_only}).
 }
 \details{
 \itemize{
 \item \code{variants_list()} lists variants matching the filters in \code{...}
 (\code{proteins_list(kind = "engineered")}; see \link{proteins} for the filters).
 \item \code{variants_get()} returns one variant by accession or numeric id. Merges
-behave as in \code{\link[=proteins_get]{proteins_get()}}.
+behave as in \code{\link[=proteins_get]{proteins_get()}}; a withdrawn variant (also one whose parent
+protein was withdrawn) signals \code{plasticdb_gone}. On a past release the
+record comes from its snapshot: a variant the release did not contain is
+\code{plasticdb_not_found} (merges are not followed there),
+\code{include_sequenceless = TRUE} is \code{plasticdb_release_unsupported_filter},
+and the fields it cannot fill are in
+\code{last_response()$unavailable_fields}.
 \item \code{variants_of()} lists the variants of one parent protein, with
 sequences (the same as \code{\link[=proteins_variants]{proteins_variants()}}).
 \item \code{variants_sequences()} returns the listed variants' sequences as an

@@ -8,7 +8,7 @@
 \title{Database statistics}
 \usage{
 stats_summary(
-  evidence_scope = c("organism_or_enzyme", "whole_organism"),
+  evidence_scope = c("organism_or_enzyme", "whole_organism", "enzyme_only"),
   client = plasticdb_client()
 )
 
@@ -22,7 +22,9 @@ stats_charts(
 stats_by_country(client = plasticdb_client())
 }
 \arguments{
-\item{evidence_scope}{\code{"organism_or_enzyme"} or \code{"whole_organism"}.}
+\item{evidence_scope}{\code{"organism_or_enzyme"} or \code{"whole_organism"};
+\code{stats_summary()} also takes \code{"enzyme_only"} (count only the organisms
+credited through an enzyme).}
 
 \item{client}{A \code{\link[=plasticdb_client]{plasticdb_client()}}.}
 }

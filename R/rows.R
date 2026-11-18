@@ -95,8 +95,26 @@ ROW_KINDS <- list(
                 `[[`, "id"))))),
     pathway = list(
         exclude = list(steps = TRUE),
-        summary = function(x) list(step_count = length(x$steps)))
+        summary = function(x) list(step_count = length(x$steps))),
+    job_hit = list(
+        exclude = list(evidence = TRUE, protein = "degradation_links"),
+        summary = function(x) hit_evidence_columns(x$evidence)),
+    job = list(
+        exclude = list(results = TRUE, result_metadata = TRUE,
+            comparison = TRUE),
+        summary = function(x) list())
 )
+
+# A job hit's per-plastic evidence (on the protein or variant it landed on).
+hit_evidence_columns <- function(evidence) {
+    by <- function(count) {
+        keep <- Filter(function(e) isTRUE((e[[count]] %||% 0) > 0), evidence)
+        vapply(keep, function(e) as.character(e$plastic %||% NA), "")
+    }
+    list(plastics_positive = by("positive"),
+        plastics_negative = by("negative"),
+        plastics_inconclusive = by("inconclusive"))
+}
 
 record_row <- function(x, kind = NULL) {
     spec <- if (is.null(kind)) NULL else ROW_KINDS[[kind]]

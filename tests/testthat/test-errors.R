@@ -141,3 +141,66 @@ test_that("an unexpected redirect is reported as such", {
         class = "plasticdb_unexpected_response")
     expect_match(conditionMessage(err), "/elsewhere")
 })
+
+test_that("every condition carries the server's reason", {
+    local_clean_env()
+    local_no_sleep()
+    err <- expect_classes(503L, list(detail = "building",
+        reason = "archive_unavailable"), "plasticdb_service_unavailable",
+        headers = list(`retry-after` = "120"))
+    expect_identical(err$reason, "archive_unavailable")
+    expect_identical(err$retry_after, 120)
+    err <- expect_classes(404L, list(detail = "missing"), "plasticdb_not_found")
+    expect_null(err$reason)
+})
+
+test_that("record redirects are told apart by reason", {
+    local_clean_env()
+    err <- expect_classes(301L, list(accession = "PBDTZX",
+        location = "/api/v1/variants/PBDTZX", kind = "engineered",
+        reason = "engineered_variant"),
+        c("plasticdb_engineered_variant", "plasticdb_not_found"))
+    expect_identical(err$accession, "PBDTZX")
+    err <- expect_classes(301L, list(accession = "PBTNBA",
+        location = "/api/v1/variants/PBTNBA", kind = "engineered",
+        reason = "merged", merged_into = "PBTNBA"),
+        c("plasticdb_merged", "plasticdb_gone"))
+    expect_identical(err$merged_into, "PBTNBA")
+    expect_identical(err$kind, "engineered")
+})
+
+test_that("a variant's per-protein table is a 404 engineered_variant", {
+    local_clean_env()
+    err <- expect_classes(404L, list(detail = "no sub-resource",
+        accession = "PBDTZX", kind = "engineered",
+        reason = "engineered_variant", location = "/api/v1/variants/PBDTZX",
+        merged_into = NULL),
+        c("plasticdb_engineered_variant", "plasticdb_not_found"))
+    expect_identical(err$location, "/api/v1/variants/PBDTZX")
+    expect_null(err$merged_into)
+})
+
+test_that("expired results and reused idempotency keys have their classes", {
+    local_clean_env()
+    err <- expect_classes(410L, list(detail = "expired", reason = "expired",
+        results_expired_at = "2026-11-01T00:00:00Z"),
+        c("plasticdb_results_expired", "plasticdb_gone"))
+    expect_s3_class(err$results_expired_at, "POSIXct")
+    expect_identical(format(err$results_expired_at, "%Y-%m-%d", tz = "UTC"),
+        "2026-11-01")
+    err <- expect_classes(422L, list(detail = list(list(
+        type = "idempotency_key_reused", loc = list("header",
+            "Idempotency-Key"), msg = "used for a different request"))),
+        c("plasticdb_idempotency_key_reused", "plasticdb_validation"))
+    expect_length(err$errors, 1)
+})
+
+test_that("a search's 504 timeout is not retried", {
+    local_clean_env()
+    local_no_sleep()
+    calls <- local_api(function(req) json_response(list(detail = "slow",
+        reason = "timeout"), status = 504L))
+    err <- expect_error(releases_status(), class = "plasticdb_server_error")
+    expect_identical(err$reason, "timeout")
+    expect_length(calls$urls, 1)
+})
