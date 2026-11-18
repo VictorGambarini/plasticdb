@@ -1,0 +1,75 @@
+name: R-CMD-check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  R-CMD-check:
+    name: R CMD check (R ${{ matrix.r }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        r: [release, devel]
+    env:
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+      R_KEEP_PKG_SOURCE: yes
+      # The tests and vignette run offline from fixtures; make sure of it.
+      PLASTICDB_BASE_URL: https://v2.plasticdb.org/api/v1
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: r-lib/actions/setup-pandoc@v2
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: ${{ matrix.r }}
+          use-public-rspm: true
+
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          extra-packages: any::rcmdcheck
+          needs: check
+
+      - uses: r-lib/actions/check-r-package@v2
+        with:
+          upload-snapshots: true
+          error-on: '"warning"'
+          build_args: 'c("--no-manual")'
+          args: 'c("--no-manual", "--as-cran")'
+
+  BiocCheck:
+    name: BiocCheck (Bioconductor devel)
+    runs-on: ubuntu-latest
+    container: bioconductor/bioconductor_docker:devel
+    env:
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          Rscript -e 'BiocManager::install(c("BiocCheck", "remotes"), ask = FALSE, update = FALSE)'
+          Rscript -e 'remotes::install_deps(".", dependencies = TRUE, repos = BiocManager::repositories(), upgrade = "never")'
+
+      - name: Build
+        run: R CMD build --no-manual .
+
+      - name: R CMD check (Bioconductor devel)
+        run: R CMD check --no-manual plasticdb_*.tar.gz
+
+      # no-check-bioc-help skips the support-site / mailing-list registration
+      # checks: they are about the maintainer's accounts, not the code.
+      - name: BiocCheck
+        run: |
+          Rscript -e 'BiocCheck::BiocCheck(list.files(pattern = "^plasticdb_.*[.]tar[.]gz$"), `quit-with-status` = TRUE, `new-package` = TRUE, `no-check-bioc-help` = TRUE)'

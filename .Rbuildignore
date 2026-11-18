@@ -1,0 +1,7 @@
+^LICENSE\.md$
+^\.github$
+^CITATION\.cff$
+^README\.Rmd$
+^.*\.Rproj$
+^\.Rproj\.user$
+^tools$
