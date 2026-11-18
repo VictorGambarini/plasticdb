@@ -1,0 +1,27 @@
+pkgVersion <- meta$Version
+
+c(
+    bibentry(
+        bibtype = "Manual",
+        header = "To cite the plasticdb R package:",
+        title = "plasticdb: Client for the PlasticDB Database of Plastic-Degrading Microorganisms and Proteins",
+        author = person("Victor", "Gambarini"),
+        year = format(Sys.Date(), "%Y"),
+        note = paste("R package version", pkgVersion),
+        url = "https://github.com/VictorGambarini/plasticdb-r"
+    ),
+    bibentry(
+        bibtype = "Article",
+        header = paste("To cite the PlasticDB database (also cite the dataset",
+            "release you used: see plasticdb::cite()):"),
+        title = "PlasticDB: a database of microorganisms and proteins linked to plastic biodegradation",
+        author = c(person("Victor", "Gambarini"), person("Olga", "Pantos"),
+            person(c("Joanne", "M."), "Kingsbury"), person("Louise", "Weaver"),
+            person(c("Kim", "M."), "Handley"), person("Gavin", "Lear")),
+        journal = "Database",
+        year = "2022",
+        volume = "2022",
+        pages = "baac008",
+        doi = "10.1093/database/baac008"
+    )
+)

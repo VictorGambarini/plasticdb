@@ -1,0 +1,214 @@
+---
+title: "Quick start: PlasticDB from R"
+author: "Victor Gambarini"
+date: "`r Sys.Date()`"
+output:
+  BiocStyle::html_document:
+    toc: true
+vignette: >
+  %\VignetteIndexEntry{Quick start: PlasticDB from R}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+# The examples run offline, against responses captured from the live API
+# (the package's test fixtures). Where those are not available (an installed
+# package has no tests/ directory), the chunks are shown but not run.
+mocks <- normalizePath(file.path("..", "tests", "testthat", "fixtures"),
+    mustWork = FALSE)
+offline <- requireNamespace("httptest2", quietly = TRUE) && dir.exists(mocks)
+if (offline) {
+    httptest2::.mockPaths(mocks)
+    httptest2::set_redactor(function(x) {
+        x$url <- sub("https://v2.plasticdb.org/api/v1/", "pdb/", x$url,
+            fixed = TRUE)
+        x$url <- sub("https://v2.plasticdb.org/", "pdbroot/", x$url,
+            fixed = TRUE)
+        x
+    })
+    httptest2::use_mock_api()
+}
+options(plasticdb.cache = FALSE, plasticdb.quiet = TRUE)
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", eval = offline)
+```
+
+# Introduction
+
+[PlasticDB](https://v2.plasticdb.org) is a curated database of
+microorganisms and proteins linked to plastic biodegradation, and of the
+evidence behind each link: every **interaction** (one organism or protein
+tested on one plastic in one paper), the **experiments** that tested it, and
+the **observations** each measured. The `r BiocStyle::Biocpkg("plasticdb")`
+package reads it from R:
+
+* catalogue tables (proteins, microorganisms, plastics, papers, evidence) as
+  tibbles, one flat row per record;
+* protein sequences as `r BiocStyle::Biocpkg("Biostrings")` `AAStringSet`
+  objects, named by accession, with the record's columns in `mcols()`;
+* files (tables, FASTA, the whole dataset, a release's archived reference
+  databases) on disk, with pinned and release files cached by
+  `r BiocStyle::Biocpkg("BiocFileCache")`.
+
+Reads need no account. The data is licensed CC BY 4.0: see
+[Citing the data](#citing-the-data).
+
+# Installation
+
+```{r install, eval = FALSE}
+if (!requireNamespace("BiocManager", quietly = TRUE)) {
+    install.packages("BiocManager")
+}
+BiocManager::install("plasticdb")
+```
+
+Until it is in Bioconductor, install it from GitHub:
+`BiocManager::install("VictorGambarini/plasticdb-r")`.
+
+```{r library}
+library(plasticdb)
+```
+
+# Proteins
+
+`proteins_list()` takes the API's own filters as named arguments: here, the
+wild-type proteins with positive evidence on PET. `limit` caps how many
+records are fetched; leave it out to get every page.
+
+```{r proteins}
+pet <- proteins_list(plastic = "PET", kind = "wild_type", limit = 3)
+pet[, c("accession", "name", "source_microorganism.name")]
+```
+
+Nested objects become `parent.child` columns and per-plastic evidence becomes
+list columns:
+
+```{r proteins-columns}
+pet$plastics_positive[[1]]
+```
+
+Every result records what answered it. Without a pinned release the live
+database answers, and the server's total tells how many records match:
+
+```{r provenance}
+prov <- provenance(pet)
+prov[c("release", "release_source", "pinned", "total")]
+```
+
+One record keeps the API's nesting:
+
+```{r petase}
+petase <- proteins_get("PBFCTW", view = "summary")
+petase$name
+nchar(petase$sequence)
+petase$source_microorganism$name
+```
+
+# Sequences
+
+`proteins_sequences()` takes the same filters and returns an `AAStringSet`:
+
+```{r sequences}
+phb <- proteins_sequences(plastic = "PHB", kind = "wild_type",
+    min_year = 2025)
+phb
+S4Vectors::mcols(phb)[, c("name", "source_microorganism.name")]
+```
+
+Tables that carry a `sequence` column, such as a protein's engineered
+variants, convert with `as_aastringset()`:
+
+```{r variants}
+variants <- proteins_variants("PBFCTW", limit = 2)
+as_aastringset(variants)
+```
+
+`Biostrings::writeXStringSet(phb, "phb.fasta")` writes a FASTA file.
+
+# The evidence
+
+`evidence_interactions()` (the same as `proteins_interactions()`) returns a
+protein's interactions. `level = "observation"` gives one row per measured
+value, repeating the interaction's and experiment's columns:
+
+```{r evidence}
+obs <- evidence_interactions("PBFCTW", level = "observation", limit = 3)
+dim(obs)
+head(grep("^(experiment|observation)\\.", names(obs), value = TRUE))
+```
+
+Organisms, plastics and papers work the same way:
+
+```{r catalogue}
+microorganisms_list(genus = "Pseudomonas", limit = 2)[, c("name", "tax_id")]
+plastics_list(limit = 2)[, c("name", "full_name", "protein_count")]
+```
+
+# Search, pathways and statistics
+
+```{r search}
+search_hits("cutinase", limit = 3)[, c("entity_type", "route_key", "name")]
+g <- pathways_graph(16)
+head(g$edges[, c("source", "target", "label")], 3)
+stats_summary()$proteins
+```
+
+# Reproducible analyses: pin a release
+
+PlasticDB publishes numbered dataset releases, each with a DOI and a frozen
+copy of the data. The live database moves on; a release does not. Pin one
+for a whole script with an option (or `PLASTICDB_RELEASE`), or for one call
+with a client:
+
+```{r pin, eval = FALSE}
+options(plasticdb.release = "2026.50")
+pet <- proteins_list(plastic = "PET")
+provenance(pet)$release_source  # "snapshot": answered from the release
+
+client <- plasticdb_client(release = "2026.50")
+proteins_list(plastic = "PET", client = client)
+```
+
+Answers from a past release never change, so they are cached on disk
+(`tools::R_user_dir("plasticdb", "cache")`, or `plasticdb_client(cache =)`)
+and reused without a request; live answers are never cached. Searches and a
+few other live-only calls cannot be answered from a past release and signal
+`plasticdb_release_live_only`. Releases are listed by `releases_list()`.
+
+# Errors
+
+Errors are classed conditions, so they can be handled precisely. A merged
+accession names its survivor:
+
+```{r errors}
+res <- tryCatch(proteins_get("PBGQPC"),
+    plasticdb_merged = function(e) e$merged_into)
+res
+```
+
+`follow_merges = TRUE` returns the survivor instead, with a warning. See
+`?"plasticdb-conditions"` for every class.
+
+# Citing the data
+
+The PlasticDB data is licensed
+[CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). `cite()` returns
+the dataset release and the PlasticDB paper as a `bibentry` (a pinned client
+cites its release):
+
+```{r cite}
+cite()
+```
+
+`toBibtex(cite())` gives BibTeX. To cite this package, use
+`citation("plasticdb")`.
+
+```{r teardown, include = FALSE}
+if (offline) httptest2::stop_mocking()
+```
+
+# Session information
+
+```{r session, eval = TRUE}
+sessionInfo()
+```

@@ -1,0 +1,45 @@
+Package: plasticdb
+Type: Package
+Title: Client for the PlasticDB Database of Plastic-Degrading Microorganisms and Proteins
+Version: 0.99.0
+Authors@R:
+    person("Victor", "Gambarini", role = c("aut", "cre"),
+           email = "victor.gambarini@gmail.com")
+Description: Query PlasticDB (<https://v2.plasticdb.org>), a curated database of
+    microorganisms and proteins linked to plastic biodegradation, and the
+    evidence behind each link (interactions, experiments and observations).
+    Catalogue tables are returned as tibbles and protein sequences as
+    'Biostrings' AAStringSet objects. Reads can be pinned to a named, citable
+    dataset release; answers from a pinned release are cached on disk with
+    'BiocFileCache'. The data is licensed CC BY 4.0: cite() returns the
+    citation for the release used.
+License: MIT + file LICENSE
+URL: https://github.com/VictorGambarini/plasticdb-r, https://v2.plasticdb.org
+BugReports: https://github.com/VictorGambarini/plasticdb-r/issues
+Encoding: UTF-8
+Imports:
+    BiocFileCache,
+    Biostrings,
+    httr2 (>= 1.0.0),
+    jsonlite,
+    methods,
+    openssl,
+    rlang (>= 1.1.0),
+    S4Vectors,
+    stats,
+    tibble,
+    tools,
+    utils
+Suggests:
+    BiocStyle,
+    httptest2,
+    knitr,
+    rmarkdown,
+    testthat (>= 3.0.0),
+    withr
+VignetteBuilder: knitr
+biocViews: Software, DataImport, ThirdPartyClient, Annotation, Proteomics,
+    Microbiome, Metagenomics
+Config/testthat/edition: 3
+Roxygen: list(markdown = TRUE)
+Config/roxygen2/version: 8.1.1
