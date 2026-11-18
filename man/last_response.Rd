@@ -12,8 +12,11 @@ A list, or \code{NULL} before the first request.
 \description{
 The status, headers, URL and release of the last request this session
 made, for checking what answered (\code{release}, \code{release_source}, which is
-\code{"snapshot"} for a past release and \code{"live"} for the live database, and
-\code{unavailable_fields}, the fields a release does not carry).
+\code{"snapshot"} for a past release and \code{"live"} for the live database,
+\code{unavailable_fields}, the fields a release does not carry, \code{etag},
+\code{sha256} (a release artefact's own SHA-256), \code{source_sha256} (the release
+Parquet files a pinned download was rendered from) and \code{replayed} (a
+submission's \code{Idempotency-Key} returned an existing job).
 }
 \examples{
 last_response()

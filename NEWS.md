@@ -1,3 +1,53 @@
+# plasticdb 0.99.1
+
+* Jobs (R3), mirroring the Python client: `submit_job()` and the typed
+  helpers `annotate_gene()`, `annotate_genome()`, `compare_genomes()`,
+  `annotate_list()`, `pathway_analysis()` (`target_plastic`),
+  `hmm_screen()` and `build_tree()`; the synchronous `search_sequence()`;
+  `wait_job()`, `job_get()`, `job_status()`, `job_results()` (hits paged
+  from `/jobs/{id}/results`, pathway steps, the annotated taxa table, or a
+  tree as Newick text, an organism x plastic matrix and, with ape, a
+  `phylo`), `job_comparison()`, `job_download()`, `job_share()`,
+  `job_shares()`, `job_unshare()`, `job_shared()`, `jobs_list()`,
+  `job_provenance()` and `job_replayed()`.
+    * Inputs are file paths (plain or gzip), FASTA text, raw bytes,
+      `Biostrings::AAStringSet`/`DNAStringSet`s or (taxa tables) data
+      frames; each upload is named after its contents (`.gz` exactly when it
+      is gzip).
+    * Every submission carries an `Idempotency-Key` (`idempotency_key =`, or
+      a new UUID), reused on each retry. With an API key, submissions are
+      retried like reads (timeouts, connection errors, 5xx); without one a
+      POST is resent only when it never reached the server, or on a 429.
+      `Idempotent-Replayed` is reported by `job_replayed()`.
+    * New conditions: `plasticdb_api_key_required` (before anything is
+      sent), `plasticdb_job_error`, `plasticdb_job_failed`,
+      `plasticdb_job_timeout`, `plasticdb_results_expired` (410 `expired`)
+      and `plasticdb_idempotency_key_reused` (422).
+* Adapted to server 2.86 and 2.87:
+    * Record redirects are told apart by `reason`: `engineered_variant` or
+      `merged` (with `merged_into`; `kind` may be `"microorganism"`, so
+      `microorganisms_get(follow_merges = TRUE)` follows organism merges).
+      A variant's accession on a per-protein table is a 404
+      `engineered_variant`, now also `plasticdb_not_found`. Withdrawn records
+      (and variants of a withdrawn protein) are `plasticdb_gone` with
+      `reason` `"withdrawn"` and `accession`. Every condition has `reason`.
+    * `proteins_fasta()` and `proteins_structure()` given a variant's
+      accession return the variant's; `proteins_get()` takes a numeric id.
+    * `variants_get()` and `variants_fasta()` answer a pinned release.
+    * `evidence_scope = "enzyme_only"` on `microorganisms_get()` and
+      `stats_summary()`.
+    * Every search `route_key` is a string.
+    * The dataset ZIP's 503 is JSON (`reason` `"archive_unavailable"`); a
+      sequence search's 504 `timeout` is not retried.
+    * A cached pinned download is revalidated with its `ETag`
+      (`If-None-Match`; a 304, or an unreachable server, uses the cached
+      copy). Release artefacts are also checked against
+      `X-PlasticDB-SHA256`. `last_response()` reports `etag`, `sha256`,
+      `source_sha256` and `replayed`.
+    * The SDK contract is re-vendored and the fixtures re-captured from
+      2.87.0.
+* A second vignette, *Reproducible analyses with a pinned release*.
+
 # plasticdb 0.99.0
 
 * First version, for submission to Bioconductor. Mirrors the Python client

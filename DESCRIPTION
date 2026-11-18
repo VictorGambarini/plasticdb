@@ -1,7 +1,7 @@
 Package: plasticdb
 Type: Package
 Title: Client for the PlasticDB Plastic Biodegradation Database
-Version: 0.99.0
+Version: 0.99.1
 Authors@R:
     person("Victor", "Gambarini", role = c("aut", "cre"),
            email = "victor.gambarini@gmail.com")
@@ -11,7 +11,10 @@ Description: Query PlasticDB (<https://v2.plasticdb.org>), a curated database of
     Catalogue tables are returned as tibbles and protein sequences as
     'Biostrings' AAStringSet objects. Reads can be pinned to a named, citable
     dataset release; answers from a pinned release are cached on disk with
-    'BiocFileCache'. The data is licensed CC BY 4.0: cite() returns the
+    'BiocFileCache'. Jobs run PlasticDB's analyses on the server (DIAMOND
+    annotation of genes, genomes and genome sets, taxa-table matching,
+    pathway mapping, HMM screens and taxonomy trees) from files, FASTA text
+    or 'Biostrings' sets. The data is licensed CC BY 4.0: cite() returns the
     citation for the release used.
 License: MIT + file LICENSE
 URL: https://github.com/VictorGambarini/plasticdb-r, https://v2.plasticdb.org
@@ -20,6 +23,7 @@ Encoding: UTF-8
 Imports:
     BiocFileCache,
     Biostrings,
+    curl (>= 5.0.0),
     httr2 (>= 1.0.0),
     jsonlite,
     methods,
@@ -31,6 +35,7 @@ Imports:
     tools,
     utils
 Suggests:
+    ape,
     BiocStyle,
     httptest2,
     knitr,

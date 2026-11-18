@@ -1,4 +1,11 @@
 # Streaming downloads to disk, with checksum verification and the release cache.
+#
+# A release artefact is checked against the SHA-256 its release published and
+# the one the server sends (X-PlasticDB-SHA256, also its strong ETag); a cached
+# copy is verified locally and needs no request. A pinned download (a past
+# release's table) is cached with its weak ETag; reusing it costs one
+# conditional request (If-None-Match: a 304 has no body), and if the server
+# cannot be reached the cached copy is used.
 
 filename_from <- function(headers, default) {
     cd <- headers[["content-disposition"]] %||% ""
@@ -46,17 +53,44 @@ pdb_download <- function(client, endpoint, dest, params = list(),
     cache_release <- immutable_release %||% prep$pinned
     key <- if (!is.null(client$cache_dir) && !is.null(cache_release))
         cache_key_for(prep$method, prep$url)
-    if (!is.null(key)) {
-        target <- from_file_cache(client, endpoint, prep, cache_release, key,
-            expected, dest, default_name)
-        if (!is.null(target)) return(target)
+    hit <- if (!is.null(key)) cache_get_file(client, cache_release, key)
+    if (!is.null(hit) && !is.null(expected) &&
+        !identical(hit$sha256, expected)) {
+        hit <- NULL
+    }
+    use_hit <- function() {
+        place_cached(client, endpoint, prep, hit, dest, default_name)
+    }
+    conditional <- list()
+    if (!is.null(hit)) {
+        etag <- clean(hit$headers[["etag"]])
+        if (!is.null(immutable_release) || is.null(etag)) {
+            # Content-addressed (verified above), or no validator: it stands.
+            return(use_hit())
+        }
+        conditional <- list(`If-None-Match` = etag)
     }
 
-    req <- build_httr2(client, prep$method, prep$url, follow_redirects = TRUE)
+    req <- build_httr2(client, prep$method, prep$url, follow_redirects = TRUE,
+        headers = conditional)
     tmp <- tempfile("plasticdb-")
     on.exit(if (file.exists(tmp)) unlink(tmp), add = TRUE)
-    resp <- send_request(client, req, path = tmp)
+    resp <- tryCatch(send_request(client, req, path = tmp),
+        plasticdb_connection_error = function(e) {
+            if (is.null(hit)) rlang::cnd_signal(e)
+            rlang::warn(sprintf(
+                "PlasticDB: %s unreachable (%s); using the cached copy.",
+                sub("\\?.*$", "", prep$url), conditionMessage(e)),
+                class = "plasticdb_cache_fallback")
+            NULL
+        })
+    if (is.null(resp)) {
+        return(use_hit())
+    }
     status <- httr2::resp_status(resp)
+    if (status == 304L && !is.null(hit)) {
+        return(use_hit())
+    }
     headers <- response_headers(resp)
     if (status < 200L || status >= 300L) {
         abort_from_response(decode_response(status, headers,
@@ -64,12 +98,17 @@ pdb_download <- function(client, endpoint, dest, params = list(),
     }
     body_to_file(resp, tmp)
     actual <- sha256_file(tmp)
-    if (!is.null(expected) && !identical(actual, expected)) {
-        pdb_abort("checksum", sprintf(
-            "%s: SHA-256 %s does not match the published %s",
-            sub("\\?.*$", "", prep$url), actual, expected),
-            expected = expected, actual = actual, url = prep$url,
-            status = status)
+    served <- clean(tolower(headers[[SHA256_HEADER]] %||% ""))
+    for (check in list(list(expected, "the published"),
+                        list(served, "the server's"))) {
+        want <- check[[1]]
+        if (!is.null(want) && !identical(actual, want)) {
+            pdb_abort("checksum", sprintf(
+                "%s: SHA-256 %s does not match %s %s",
+                sub("\\?.*$", "", prep$url), actual, check[[2]], want),
+                expected = want, actual = actual, url = prep$url,
+                status = status)
+        }
     }
     target <- resolve_target(dest, headers, default_name)
     place_file(tmp, target)
@@ -87,14 +126,8 @@ pdb_download <- function(client, endpoint, dest, params = list(),
     target
 }
 
-# A verified cached copy placed at `dest`, or NULL when there is none.
-from_file_cache <- function(client, endpoint, prep, release, key, expected,
-                            dest, default_name) {
-    hit <- cache_get_file(client, release, key)
-    if (is.null(hit) || !(is.null(expected) ||
-        identical(hit$sha256, expected))) {
-        return(NULL)
-    }
+# A cached copy placed at `dest`.
+place_cached <- function(client, endpoint, prep, hit, dest, default_name) {
     target <- resolve_target(dest, hit$headers, default_name)
     place_file(hit$path, target)
     remember(client, decode_response(hit$status, hit$headers, raw(),

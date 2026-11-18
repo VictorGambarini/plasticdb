@@ -66,17 +66,91 @@ not_wrapped <- c(
     "GET /api/v1/vocabulary",
     "GET /api/v1/vocabulary/{}"
 )
-is_job <- function(op) {
-    grepl("^[A-Z]+ /api/v1/(jobs|tree|bioinformatics)", op)
-}
+# Jobs: the deprecated base64 routes are not wrapped (POST /jobs takes the
+# same jobs as multipart uploads), nor GET /tree/{job_id}, a duplicate of
+# GET /jobs/{job_id} (which carries result_newick).
+not_wrapped_jobs <- c(
+    "GET /api/v1/tree/{}"
+)
+deprecated <- unlist(lapply(names(spec$paths), function(path) {
+    ops <- spec$paths[[path]]
+    hits <- Filter(function(m) isTRUE(ops[[m]]$deprecated), names(ops))
+    if (length(hits)) paste(toupper(hits), normalise(path))
+}))
 
-test_that("every non-job contract operation is wrapped or listed", {
+test_that("every contract operation is wrapped or listed", {
     wrapped <- vapply(in_contract, op_key, "")
     missing <- setdiff(operations, wrapped)
-    # Jobs (submit, wait, results, share) are the next phase (R3).
-    expect_setequal(missing[!is_job(missing)], not_wrapped)
-    expect_length(intersect(not_wrapped, wrapped), 0)
-    expect_false(any(is_job(wrapped)))
+    expect_setequal(missing, c(not_wrapped, not_wrapped_jobs, deprecated))
+    expect_length(intersect(c(not_wrapped, not_wrapped_jobs, deprecated),
+        wrapped), 0)
+})
+
+test_that("the unwrapped bioinformatics routes are exactly the deprecated", {
+    wrapped <- vapply(in_contract, op_key, "")
+    bio <- grep("/api/v1/bioinformatics/", operations, value = TRUE)
+    expect_setequal(setdiff(bio, wrapped), deprecated)
+    expect_true(all(grepl("/bioinformatics/", deprecated)))
+})
+
+test_that("idempotency matches the Idempotency-Key the contract documents", {
+    for (e in in_contract) {
+        expect_identical("Idempotency-Key" %in% param_names(e),
+            e$idempotency, info = op_key(e))
+    }
+})
+
+test_that("every wrapped POST is idempotent or retry-safe", {
+    for (e in in_contract) {
+        if (e$method != "POST") next
+        expect_true(e$idempotency || e$retry_safe, info = op_key(e))
+        expect_identical("release" %in% param_names(e), e$pinnable,
+            info = op_key(e))
+    }
+})
+
+schema <- function(name) spec$components$schemas[[name]]
+
+test_that("the job parameters are the submission form's fields", {
+    form <- names(schema("Body_submit_job_api_v1_jobs_post")$properties)
+    params <- unique(unlist(plasticdb:::JOB_PARAMS))
+    expect_setequal(setdiff(form, c("job_type", "file", "files")), params)
+    expect_setequal(names(plasticdb:::JOB_PARAMS),
+        unlist(schema("JobTypeEnum")$enum))
+    expect_setequal(plasticdb:::TREE_FILTERS,
+        names(schema("TreeBuildRequest")$properties))
+})
+
+test_that("the synthetic job fixtures carry what the schemas require", {
+    files <- list.files(test_path("fixtures", "synthetic"), "\\.R$",
+        recursive = TRUE, full.names = TRUE)
+    expect_gt(length(files), 0)
+    for (f in files) {
+        resp <- source(f)$value
+        if (!grepl("json", resp$headers[["content-type"]] %||% "")) next
+        body <- jsonlite::parse_json(rawToChar(resp$body))
+        if (resp$status_code >= 300L) next
+        if (all(c("total", "items") %in% names(body))) {
+            items <- body$items
+        } else if (is.null(names(body))) {
+            items <- body
+        } else {
+            items <- list(body)
+        }
+        for (item in items) {
+            name <- if (!is.null(item$job_type)) "JobRead" else
+                if (!is.null(item$token)) "JobShareCreated" else
+                if (!is.null(item$active)) "JobShareRead" else
+                if (!is.null(item$query_seq_id)) "JobResultItem" else NULL
+            if (is.null(name)) next
+            required <- unlist(schema(name)$required)
+            expect_true(all(required %in% names(item)),
+                info = paste(basename(f), name))
+            expect_true(all(names(item) %in% c(names(schema(name)$properties),
+                if (name == "JobRead") names(schema("JobDetail")$properties))),
+                info = paste(basename(f), name))
+        }
+    }
 })
 
 test_that("only /health is outside the contract", {

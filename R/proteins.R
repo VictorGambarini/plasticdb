@@ -15,12 +15,16 @@ warn_merged <- function(old, new) {
 #'   types and variants; `kind =` narrows). Like every entity list, only
 #'   records with a positive result are listed unless `polarity =` or
 #'   `include_negative = TRUE` says otherwise.
-#' * `proteins_get()` returns one protein by accession (`PB...`, any case).
-#'   An engineered variant's accession returns the variant, as
+#' * `proteins_get()` returns one protein by accession (`PB...`, any case)
+#'   or numeric id. An engineered variant's accession returns the variant, as
 #'   [variants_get()] does. A merged accession signals `plasticdb_merged`
 #'   naming the survivor (`merged_into`); with `follow_merges = TRUE` the
 #'   survivor is returned instead, with a `plasticdb_merged_warning`. A
-#'   withdrawn record signals `plasticdb_gone`.
+#'   withdrawn record signals `plasticdb_gone` (`reason` `"withdrawn"`).
+#'   The per-protein tables of a merged accession signal `plasticdb_merged`
+#'   too (its `location` is the survivor's table); given a variant's
+#'   accession they signal `plasticdb_engineered_variant`, since variants
+#'   have none (its record carries them: [variants_get()]).
 #' * `proteins_interactions()` is the protein's evidence spine: `"direct"`
 #'   (assayed on it) or `"indirect"` (via its organism) interactions, as one
 #'   row per interaction, experiment or observation (`level`).
@@ -33,7 +37,8 @@ warn_merged <- function(old, new) {
 #' * `proteins_fasta()` and `proteins_structure()` are one protein's FASTA
 #'   record and primary structure (PDB text, or a file with `path`);
 #'   `proteins_lineage()` a wild type with every variant engineered from it;
-#'   `proteins_engineered_parents()` the wild types that have variants. These
+#'   `proteins_engineered_parents()` the wild types that have variants. A
+#'   variant's accession gives the variant's FASTA record or structure. These
 #'   four are live only: a pinned client gets `plasticdb_release_live_only`
 #'   (for a pinned structure use [downloads_structure()]).
 #'
@@ -50,7 +55,7 @@ warn_merged <- function(old, new) {
 #' `plastics_negative` and `plastics_inconclusive`.
 #'
 #' @param ... Filters (see Details), named as the API names them.
-#' @param accession,ref A protein accession (`ref` also takes a numeric id).
+#' @param accession,ref A protein accession or numeric id.
 #' @param view `"full"` or `"summary"` (leaves out the per-record evidence
 #'   lists, much smaller for well-studied enzymes).
 #' @param include_sequenceless Include records without a sequence.
@@ -184,14 +189,18 @@ proteins_sequences <- function(..., limit = Inf, client = plasticdb_client()) {
 #' @rdname proteins
 #' @export
 proteins_fasta <- function(ref, client = plasticdb_client()) {
-    body_text(pdb_request(client, ENDPOINTS$proteins_fasta,
-        path_params = list(ref = ref))$data)
+    tryCatch(body_text(pdb_request(client, ENDPOINTS$proteins_fasta,
+        path_params = list(ref = ref))$data),
+        plasticdb_engineered_variant = function(e)
+            variants_fasta(e$accession, client = client))
 }
 
 #' @rdname proteins
 #' @export
 proteins_structure <- function(ref, path = NULL, client = plasticdb_client()) {
-    structure_text(client, ENDPOINTS$proteins_structure, ref, path)
+    tryCatch(structure_text(client, ENDPOINTS$proteins_structure, ref, path),
+        plasticdb_engineered_variant = function(e)
+            variants_structure(e$accession, path = path, client = client))
 }
 
 #' @rdname proteins
@@ -220,13 +229,20 @@ structure_text <- function(client, endpoint, ref, path) {
 #' Engineered variants
 #'
 #' Engineered variants of wild-type proteins: their mutations, engineering
-#' method and evidence. Records are live only (a pinned client gets
-#' `plasticdb_release_live_only`); lists also work on a pinned release.
+#' method and evidence. Records, FASTA and lists answer a pinned release too;
+#' only the structure is live only (a pinned client gets
+#' `plasticdb_release_live_only`).
 #'
 #' * `variants_list()` lists variants matching the filters in `...`
 #'   (`proteins_list(kind = "engineered")`; see [proteins] for the filters).
 #' * `variants_get()` returns one variant by accession or numeric id. Merges
-#'   behave as in [proteins_get()].
+#'   behave as in [proteins_get()]; a withdrawn variant (also one whose parent
+#'   protein was withdrawn) signals `plasticdb_gone`. On a past release the
+#'   record comes from its snapshot: a variant the release did not contain is
+#'   `plasticdb_not_found` (merges are not followed there),
+#'   `include_sequenceless = TRUE` is `plasticdb_release_unsupported_filter`,
+#'   and the fields it cannot fill are in
+#'   `last_response()$unavailable_fields`.
 #' * `variants_of()` lists the variants of one parent protein, with
 #'   sequences (the same as [proteins_variants()]).
 #' * `variants_sequences()` returns the listed variants' sequences as an

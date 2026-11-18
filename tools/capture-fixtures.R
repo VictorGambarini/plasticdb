@@ -6,12 +6,15 @@
 # the fixtures small; URLs are shortened ("pdb/" for the API root) to keep the
 # paths under R's 100-byte tarball limit. tests/testthat/helper-mock.R applies
 # the same shortening to requests.
+#
+# The job fixtures (fixtures/synthetic) are not captured: jobs need an API key.
+# tools/make-job-fixtures.R writes them; this script leaves them alone.
 
 pkgload::load_all(".", quiet = TRUE, helpers = FALSE)
 library(httptest2)
 
 dir <- "tests/testthat/fixtures"
-unlink(dir, recursive = TRUE)
+unlink(file.path(dir, c("pdb", "pdbroot")), recursive = TRUE)
 .mockPaths(dir)
 options(plasticdb.quiet = TRUE, plasticdb.cache = FALSE)
 
@@ -69,6 +72,7 @@ try_call(proteins_get("PBDTZX"))
 try_call(proteins_interactions("PBFCTW", limit = 3))
 try_call(proteins_interactions("PBDTZX", limit = 3))
 try_call(proteins_kinetics("PBFCTW", limit = 2))
+try_call(proteins_kinetics("PBGQPC", limit = 2))
 try_call(proteins_properties("PBFCTW", limit = 2))
 try_call(proteins_variants("PBFCTW", limit = 2))
 try_call(proteins_sequences(plastic = "PHB", kind = "wild_type",
@@ -123,7 +127,8 @@ try_call(downloads_plastics(tempdir(), format = "csv"))
 stop_capturing()
 
 # httptest2 sources fixture files without attaching itself.
-for (f in list.files(dir, "\\.R$", recursive = TRUE, full.names = TRUE)) {
+for (f in list.files(file.path(dir, c("pdb", "pdbroot")), "\\.R$",
+    recursive = TRUE, full.names = TRUE)) {
     text <- readLines(f, warn = FALSE)
     text <- gsub("(?<!::)find_mock_file\\(", "httptest2::find_mock_file(", text,
         perl = TRUE)

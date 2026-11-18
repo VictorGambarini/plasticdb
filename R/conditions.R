@@ -9,8 +9,10 @@
 #' `plasticdb_gone`.
 #'
 #' Every condition has the fields `status` (the HTTP status), `detail` (the
-#' server's message), `response_body` and `url`. The classes, most general
-#' first (extra fields in brackets):
+#' server's message), `reason` (the server's machine-readable reason, when it
+#' sent one: `withdrawn`, `expired`, `archive_unavailable`, `timeout`, ...),
+#' `response_body` and `url`. The classes, most general first (extra fields
+#' in brackets):
 #'
 #' * `plasticdb_error`: any of the below.
 #' * `plasticdb_connection_error`: the server could not be reached;
@@ -20,16 +22,36 @@
 #' * `plasticdb_bad_request` (400), `plasticdb_authentication` (401: no,
 #'   invalid or expired API key), `plasticdb_permission_denied` (403),
 #'   `plasticdb_not_found` (404), `plasticdb_conflict` (409),
-#'   `plasticdb_gone` (410: the record was withdrawn),
-#'   `plasticdb_payload_too_large` (413).
-#' * `plasticdb_merged`: the accession was merged; also `plasticdb_gone`
-#'   (`merged_into`, `location`, `kind`).
+#'   `plasticdb_gone` (410: a withdrawn record, with `reason` `"withdrawn"`
+#'   and its `accession`; a variant is withdrawn with its parent protein),
+#'   `plasticdb_payload_too_large` (413: a file over the size limit, or more
+#'   than 20 genomes).
+#' * `plasticdb_api_key_required`: a job function was called without an API
+#'   key; also `plasticdb_authentication`, signalled before anything is sent.
+#' * `plasticdb_merged`: the accession was merged (the server answers 301);
+#'   also `plasticdb_gone` (`merged_into`, `location`, and `kind`, what the
+#'   survivor is: `"wild_type"`, `"engineered"` or `"microorganism"`).
 #' * `plasticdb_engineered_variant`: a per-protein call given a variant's
-#'   accession (`accession`, `location`).
-#' * `plasticdb_validation` (422): a parameter was invalid (`errors`).
+#'   accession; also `plasticdb_not_found` (`accession`, `location`, and
+#'   `merged_into` when the variant was merged too).
+#' * `plasticdb_results_expired`: a job's result files were deleted under the
+#'   retention policy (410 `expired`); also `plasticdb_gone`
+#'   (`results_expired_at`). Its record and hits stay readable.
+#' * `plasticdb_validation` (422): a parameter was invalid (`errors`, each
+#'   with its `loc`, `msg` and `type`).
+#' * `plasticdb_idempotency_key_reused`: a submission's `idempotency_key`
+#'   was used before for a different request; also `plasticdb_validation`.
 #' * `plasticdb_rate_limit` (429) beyond the retry budget (`retry_after`).
-#' * `plasticdb_server_error` (5xx); `plasticdb_service_unavailable` (503,
-#'   also a server error; `retry_after`).
+#' * `plasticdb_server_error` (5xx; a sequence search past the server's 15
+#'   seconds is a 504 with `reason` `"timeout"`);
+#'   `plasticdb_service_unavailable` (503, also a server error;
+#'   `retry_after`, and `reason`: `archive_unavailable` while the dataset ZIP
+#'   is built, `index_unavailable` or `binary_unavailable` for the sequence
+#'   search).
+#' * `plasticdb_job_error`: a problem with a job (`job`);
+#'   `plasticdb_job_failed`: it finished with status `error` (the message is
+#'   the server's reason); `plasticdb_job_timeout`: [wait_job()] ran out of
+#'   time (the job keeps running on the server). Both are job errors.
 #' * `plasticdb_checksum`: a download did not match its published SHA-256
 #'   (`expected`, `actual`).
 #' * `plasticdb_release_error`: a problem with the requested release
@@ -72,7 +94,16 @@ CONDITION_CLASSES <- list(
     not_found = "plasticdb_not_found",
     gone = "plasticdb_gone",
     merged = c("plasticdb_merged", "plasticdb_gone"),
-    engineered_variant = "plasticdb_engineered_variant",
+    engineered_variant = c("plasticdb_engineered_variant",
+        "plasticdb_not_found"),
+    results_expired = c("plasticdb_results_expired", "plasticdb_gone"),
+    idempotency_key_reused = c("plasticdb_idempotency_key_reused",
+        "plasticdb_validation"),
+    api_key_required = c("plasticdb_api_key_required",
+        "plasticdb_authentication"),
+    job_error = "plasticdb_job_error",
+    job_failed = c("plasticdb_job_failed", "plasticdb_job_error"),
+    job_timeout = c("plasticdb_job_timeout", "plasticdb_job_error"),
     conflict = "plasticdb_conflict",
     payload_too_large = "plasticdb_payload_too_large",
     validation = "plasticdb_validation",
@@ -149,15 +180,6 @@ error_message <- function(status, detail) {
     prefix
 }
 
-# The accession segment of a /proteins/{accession}[/...] request.
-requested_protein <- function(url) {
-    path <- sub("\\?.*$", "", sub("^[a-z]+://[^/]+", "", url))
-    parts <- strsplit(path, "/", fixed = TRUE)[[1]]
-    parts <- parts[nzchar(parts)]
-    i <- match("proteins", parts)
-    if (is.na(i) || i >= length(parts)) "" else utils::URLdecode(parts[i + 1])
-}
-
 validation_errors <- function(detail) {
     if (!is.list(detail)) {
         return(list())
@@ -179,22 +201,39 @@ unsupported_parameters <- function(detail) {
 abort_from_response <- function(resp, call = NULL) {
     status <- resp$status
     body <- resp$data
-    detail <- if (is.list(body) && !is.null(names(body))) body$detail else body
+    named <- is.list(body) && !is.null(names(body))
+    detail <- if (named) body$detail else body
     message <- error_message(status, detail)
+    reason <- if (named) body_text_field(body, "reason")
     common <- list(status = status, detail = detail, response_body = body,
-        url = resp$url)
+        url = resp$url, reason = reason)
     abort_with <- function(.kind, msg, ...) {
         do.call(pdb_abort, c(list(.kind, msg), common, list(...),
             list(call = call)))
     }
 
-    if (status %in% c(301L, 308L) && is.list(body) &&
-        is.character(body$accession)) {
-        abort_merged(resp, body, abort_with)
+    if (status %in% c(301L, 308L) && named && is.character(body$accession)) {
+        abort_redirect(resp, body, abort_with)
+    }
+    if (status == 404L && identical(reason, "engineered_variant")) {
+        accession <- body_text_field(body, "accession") %||% ""
+        abort_with("engineered_variant", paste0(variant_message(accession),
+            " (variants have no per-protein sub-resources)."),
+            accession = accession,
+            location = body_text_field(body, "location"),
+            merged_into = body_text_field(body, "merged_into"))
+    }
+    if (status == 410L && identical(reason, "expired")) {
+        abort_with("results_expired", message,
+            results_expired_at = parse_time(body_text_field(body,
+                "results_expired_at")))
+    }
+    if (status == 422L && "idempotency_key_reused" %in% error_types(detail)) {
+        abort_with("idempotency_key_reused", message,
+            errors = validation_errors(detail))
     }
 
-    reason <- if (is.list(body) && !is.null(names(body))) body$reason
-    if (is.character(reason) && length(reason) == 1L) {
+    if (!is.null(reason)) {
         kind <- switch(paste(status, reason),
             `404 unknown` = "release_unknown",
             `404 no_artefacts` = "release_no_artefacts",
@@ -202,16 +241,17 @@ abort_from_response <- function(resp, call = NULL) {
             `503 not_mounted` = "release_not_mounted",
             NULL)
         if (!is.null(kind)) {
-            abort_with(kind, message, release = body$release,
-                current_release = body$current_release, reason = reason,
+            abort_with(kind, message, release = body_text_field(body,
+                "release"), current_release = body_text_field(body,
+                "current_release"),
                 retry_after = if (status == 503L)
                     parse_retry_after(resp$headers[["retry-after"]]))
         }
     }
 
     if (status == 422L && length(unsupported_parameters(detail))) {
+        common$reason <- "release_unsupported"
         abort_with("release_unsupported_filter", message,
-            reason = "release_unsupported",
             parameters = unsupported_parameters(detail),
             errors = validation_errors(detail))
     }
@@ -229,6 +269,10 @@ abort_from_response <- function(resp, call = NULL) {
         if (kind == "validation") {
             abort_with(kind, message, errors = validation_errors(detail))
         }
+        if (kind == "gone") {
+            abort_with(kind, message, accession = if (named)
+                body_text_field(body, "accession"))
+        }
         abort_with(kind, message)
     }
     if (status >= 500L) {
@@ -244,17 +288,46 @@ abort_from_response <- function(resp, call = NULL) {
 
 `%||%` <- function(x, y) if (is.null(x)) y else x
 
-# A merge redirect: the accession was merged, or it names a variant.
-abort_merged <- function(resp, body, abort_with) {
+# A record redirect: the accession was merged, or it names a variant.
+abort_redirect <- function(resp, body, abort_with) {
     target <- body$accession
-    location <- body$location %||% resp$headers[["location"]]
-    if (identical(body$kind, "engineered") &&
-        toupper(requested_protein(resp$url)) == toupper(target)) {
-        abort_with("engineered_variant", sprintf(
-            "%s is an engineered variant: use variants_get(\"%s\").",
-            target, target), accession = target, location = location)
+    location <- body_text_field(body, "location") %||%
+        resp$headers[["location"]]
+    if (identical(body$reason, "engineered_variant")) {
+        abort_with("engineered_variant", variant_message(target),
+            accession = target, location = location, merged_into = NULL)
     }
+    merged_into <- body_text_field(body, "merged_into") %||% target
     abort_with("merged",
-        sprintf("This accession was merged into %s.", target),
-        merged_into = target, location = location, kind = body$kind)
+        sprintf("This accession was merged into %s.", merged_into),
+        merged_into = merged_into, location = location,
+        kind = body_text_field(body, "kind"))
+}
+
+variant_message <- function(accession) {
+    sprintf("%s is an engineered variant: use variants_get(\"%s\")",
+        accession, accession)
+}
+
+# A non-empty string field of a JSON object, or NULL.
+body_text_field <- function(body, key) {
+    value <- if (is.list(body)) body[[key]]
+    if (is.character(value) && length(value) == 1L && !is.na(value) &&
+        nzchar(value)) value else NULL
+}
+
+error_types <- function(detail) {
+    unlist(lapply(validation_errors(detail), function(e)
+        if (is.character(e$type)) e$type))
+}
+
+parse_time <- function(value) {
+    if (is.null(value)) {
+        return(NULL)
+    }
+    value <- sub("Z$", "+0000", sub("([+-][0-9]{2}):([0-9]{2})$", "\\1\\2",
+        value))
+    value <- sub("\\.[0-9]+", "", value)
+    out <- as.POSIXct(strptime(value, "%Y-%m-%dT%H:%M:%S%z", tz = "UTC"))
+    if (is.na(out)) NULL else out
 }

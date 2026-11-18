@@ -1,0 +1,202 @@
+---
+title: "Reproducible analyses with a pinned release"
+author: "Victor Gambarini"
+date: "`r Sys.Date()`"
+output:
+    BiocStyle::html_document:
+        toc: true
+vignette: >
+    %\VignetteIndexEntry{Reproducible analyses with a pinned release}
+    %\VignetteEngine{knitr::rmarkdown}
+    %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+# The chunks that read public data run offline, against responses captured
+# from the live API (the package's test fixtures). Chunks that need a dataset
+# release, an API key or the network are shown but not run.
+mocks <- normalizePath(file.path("..", "tests", "testthat", "fixtures"),
+    mustWork = FALSE)
+offline <- requireNamespace("httptest2", quietly = TRUE) && dir.exists(mocks)
+if (offline) {
+    httptest2::.mockPaths(mocks)
+    httptest2::set_redactor(function(x) {
+        x$url <- sub("https://v2.plasticdb.org/api/v1/", "pdb/", x$url,
+            fixed = TRUE)
+        x$url <- sub("https://v2.plasticdb.org/", "pdbroot/", x$url,
+            fixed = TRUE)
+        x
+    })
+    httptest2::use_mock_api()
+}
+options(plasticdb.cache = FALSE, plasticdb.quiet = TRUE)
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", eval = offline)
+```
+
+# Why pin a release
+
+The live PlasticDB database changes every week: papers are curated, records
+are merged, corrected or withdrawn. An analysis that reads the live database
+today may give a different answer next month. PlasticDB therefore publishes
+numbered **dataset releases** (`2026.50`, ...), each a frozen copy of the
+data with a DOI. A client *pinned* to a release sends `?release=` on every
+read, and the server answers from that release's snapshot, so the script
+gives the same answer for as long as the release exists.
+
+This vignette walks through a reproducible analysis: choosing a release,
+pinning a script to it, recording what answered, downloading the release's
+checksummed files, running analysis jobs against the release's archived
+reference databases, and citing it.
+
+**Note.** The server has not published its first dataset release yet:
+`releases_list()` is empty, and a pinned call to any release signals
+`plasticdb_release_unknown`. The code below shows how a pinned analysis
+will look once releases exist; it uses the version `2026.50` as an example
+and is not run here.
+
+```{r library}
+library(plasticdb)
+```
+
+# Choose a release
+
+`releases_list()` lists the published releases, newest first, and
+`releases_current()` names the current one (the live database serves it).
+Until the first release is published both are empty:
+
+```{r releases}
+releases_list()
+releases_current()
+```
+
+Each release record carries its DOI, the data version it was cut from and
+the artefacts it published (`releases_get("2026.50")`). An unknown version
+is a classed error you can handle:
+
+```{r unknown}
+res <- tryCatch(releases_get("2026.99"),
+    plasticdb_release_unknown = function(e) e$reason)
+res
+```
+
+# Pin a script
+
+Pin every call in a script with one option (or the `PLASTICDB_RELEASE`
+environment variable), or pin a single client and pass it as `client =`:
+
+```{r pin-option, eval = FALSE}
+options(plasticdb.release = "2026.50")
+pet <- proteins_list(plastic = "PET", kind = "wild_type")
+```
+
+```{r pin-client}
+client <- plasticdb_client(release = "2026.50", cache = FALSE)
+client
+```
+
+Every result carries its provenance. A pinned answer comes from the
+release's snapshot (`release_source` is `"snapshot"`); fields a release does
+not carry are listed in `unavailable_fields`:
+
+```{r provenance, eval = FALSE}
+pet <- proteins_list(plastic = "PET", kind = "wild_type", client = client)
+provenance(pet)[c("release", "release_source", "unavailable_fields")]
+```
+
+A few calls cannot be answered from a past release (full-text search, the
+change feed, statistics, protein structures) and signal
+`plasticdb_release_live_only`; a filter the release cannot evaluate signals
+`plasticdb_release_unsupported_filter`. Neither silently falls back to the
+live database.
+
+Answers from a past release never change, so they are kept in a
+`r BiocStyle::Biocpkg("BiocFileCache")` (by default under
+`tools::R_user_dir("plasticdb", "cache")`) and reused without a request. A
+pinned table download is revalidated with one conditional request (its
+`ETag`) and, if the server cannot be reached, the cached copy is used.
+
+# Download the release's files
+
+A release publishes its tables as Parquet files, the reference databases its
+jobs search, the structure coordinates and a `MANIFEST.json`, each with a
+SHA-256. `downloads_release_file()` checks every file against the checksum
+the release published and the one the server sends; a mismatch signals
+`plasticdb_checksum` and keeps nothing:
+
+```{r artefacts, eval = FALSE}
+files <- downloads_artefacts(client = client)
+files[, c("path", "kind", "size")]
+path <- downloads_release_file("parquet/proteins.parquet", tempdir(),
+    client = client)
+manifest <- downloads_manifest(client = client)
+```
+
+Filtered tables come from the release too, as CSV, JSON or FASTA:
+
+```{r tables, eval = FALSE}
+fasta <- downloads_proteins(tempdir(), format = "fasta", client = client)
+```
+
+# Run analyses against the release
+
+Jobs (`?jobs`) run PlasticDB's analyses on the server and need an API key
+(create one at <https://v2.plasticdb.org/profile/api-keys>). A pinned client
+runs them against the release's archived DIAMOND databases, HMM library and
+tables, so the hits are reproducible as well:
+
+```{r jobs, eval = FALSE}
+client <- plasticdb_client(api_key = Sys.getenv("PLASTICDB_API_KEY"),
+    release = "2026.50")
+job <- annotate_genome("genome.faa.gz", idempotency_key = "genome-42-run-1",
+    client = client)
+job <- wait_job(job, timeout = 3600, client = client)
+hits <- job_results(job, client = client)
+```
+
+Inputs are file paths (plain or gzip), FASTA text, or
+`r BiocStyle::Biocpkg("Biostrings")` sets:
+
+```{r biostrings, eval = FALSE}
+proteins <- Biostrings::readAAStringSet("proteins.faa")
+steps <- job_results(wait_job(pathway_analysis(proteins,
+    target_plastic = "PET", client = client), client = client),
+    client = client)
+```
+
+The `idempotency_key` makes the submission safe to repeat: a script re-run
+after a crash (or a retry after a dropped connection) gets the first job
+back instead of starting a duplicate.
+
+Record what each job ran against. `job_provenance()` gives the release, the
+SHA-256 of the reference database searched and the tool versions; the
+downloaded results file carries the same as `#` header lines:
+
+```{r job-provenance, eval = FALSE}
+job_provenance(job)[c("release", "release_source", "reference_sha256",
+    "tool_versions")]
+job_download(job, "results/", client = client)
+```
+
+# Cite the release
+
+The data is licensed CC BY 4.0. `cite()` returns the release's DOI and the
+PlasticDB paper as a `bibentry`; a pinned client cites its release:
+
+```{r cite, eval = FALSE}
+cite(client = client)
+toBibtex(cite(client = client))
+```
+
+`provenance()` without a result describes the client: the release, whether
+it was pinned, and the server and package versions. Keep it with the
+results, together with the session information below.
+
+```{r teardown, include = FALSE}
+if (offline) httptest2::stop_mocking()
+```
+
+# Session information
+
+```{r session, eval = TRUE}
+sessionInfo()
+```

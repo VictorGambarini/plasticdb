@@ -7,9 +7,12 @@
 #'   are filters too: `genus = "Pseudomonas"`, `class = "Bacilli"` (or
 #'   `class_`, as in the Python client).
 #' * `microorganisms_get()` returns one organism by NCBI tax-id or PlasticDB
-#'   accession. `evidence_scope = "whole_organism"` counts only assays on the
-#'   organism itself, not on enzymes purified from it. Merges behave as in
-#'   [proteins_get()].
+#'   accession. `evidence_scope = "whole_organism"` keeps only assays on the
+#'   organism itself, `"enzyme_only"` only the evidence of enzymes purified
+#'   from it (`interactions` empty, `indirect_interactions` kept). A merged
+#'   organism signals `plasticdb_merged` (`kind` `"microorganism"`; with
+#'   `follow_merges = TRUE` the survivor is returned), a withdrawn one
+#'   `plasticdb_gone`, as in [proteins_get()].
 #' * `microorganisms_names()` is every organism's `id` and `name`,
 #'   `microorganisms_lineage_levels()` the taxon names at each rank (narrowed
 #'   by the ranks given), and `microorganisms_taxonomy()` aggregate statistics
@@ -17,8 +20,8 @@
 #'
 #' @inheritParams proteins
 #' @param ref An NCBI tax-id or a PlasticDB accession.
-#' @param evidence_scope `"organism_or_enzyme"` (default) or
-#'   `"whole_organism"`.
+#' @param evidence_scope `"organism_or_enzyme"` (default),
+#'   `"whole_organism"` or `"enzyme_only"`.
 #' @param domain,kingdom,phylum,class,order,family Taxa to narrow the levels.
 #' @param rank,name A rank (`"genus"`) and a taxon name (`"Pseudomonas"`).
 #'
@@ -45,7 +48,7 @@ microorganisms_list <- function(..., limit = Inf, client = plasticdb_client()) {
 #' @export
 microorganisms_get <- function(ref,
                                 evidence_scope = c("organism_or_enzyme",
-                                    "whole_organism"),
+                                    "whole_organism", "enzyme_only"),
                                 follow_merges = FALSE,
                                 client = plasticdb_client()) {
     evidence_scope <- match.arg(evidence_scope)

@@ -18,8 +18,10 @@ belongs to: an unknown release is both a \code{plasticdb_release_unknown} and a
 }
 \details{
 Every condition has the fields \code{status} (the HTTP status), \code{detail} (the
-server's message), \code{response_body} and \code{url}. The classes, most general
-first (extra fields in brackets):
+server's message), \code{reason} (the server's machine-readable reason, when it
+sent one: \code{withdrawn}, \code{expired}, \code{archive_unavailable}, \code{timeout}, ...),
+\code{response_body} and \code{url}. The classes, most general first (extra fields
+in brackets):
 \itemize{
 \item \code{plasticdb_error}: any of the below.
 \item \code{plasticdb_connection_error}: the server could not be reached;
@@ -29,16 +31,36 @@ understand.
 \item \code{plasticdb_bad_request} (400), \code{plasticdb_authentication} (401: no,
 invalid or expired API key), \code{plasticdb_permission_denied} (403),
 \code{plasticdb_not_found} (404), \code{plasticdb_conflict} (409),
-\code{plasticdb_gone} (410: the record was withdrawn),
-\code{plasticdb_payload_too_large} (413).
-\item \code{plasticdb_merged}: the accession was merged; also \code{plasticdb_gone}
-(\code{merged_into}, \code{location}, \code{kind}).
+\code{plasticdb_gone} (410: a withdrawn record, with \code{reason} \code{"withdrawn"}
+and its \code{accession}; a variant is withdrawn with its parent protein),
+\code{plasticdb_payload_too_large} (413: a file over the size limit, or more
+than 20 genomes).
+\item \code{plasticdb_api_key_required}: a job function was called without an API
+key; also \code{plasticdb_authentication}, signalled before anything is sent.
+\item \code{plasticdb_merged}: the accession was merged (the server answers 301);
+also \code{plasticdb_gone} (\code{merged_into}, \code{location}, and \code{kind}, what the
+survivor is: \code{"wild_type"}, \code{"engineered"} or \code{"microorganism"}).
 \item \code{plasticdb_engineered_variant}: a per-protein call given a variant's
-accession (\code{accession}, \code{location}).
-\item \code{plasticdb_validation} (422): a parameter was invalid (\code{errors}).
+accession; also \code{plasticdb_not_found} (\code{accession}, \code{location}, and
+\code{merged_into} when the variant was merged too).
+\item \code{plasticdb_results_expired}: a job's result files were deleted under the
+retention policy (410 \code{expired}); also \code{plasticdb_gone}
+(\code{results_expired_at}). Its record and hits stay readable.
+\item \code{plasticdb_validation} (422): a parameter was invalid (\code{errors}, each
+with its \code{loc}, \code{msg} and \code{type}).
+\item \code{plasticdb_idempotency_key_reused}: a submission's \code{idempotency_key}
+was used before for a different request; also \code{plasticdb_validation}.
 \item \code{plasticdb_rate_limit} (429) beyond the retry budget (\code{retry_after}).
-\item \code{plasticdb_server_error} (5xx); \code{plasticdb_service_unavailable} (503,
-also a server error; \code{retry_after}).
+\item \code{plasticdb_server_error} (5xx; a sequence search past the server's 15
+seconds is a 504 with \code{reason} \code{"timeout"});
+\code{plasticdb_service_unavailable} (503, also a server error;
+\code{retry_after}, and \code{reason}: \code{archive_unavailable} while the dataset ZIP
+is built, \code{index_unavailable} or \code{binary_unavailable} for the sequence
+search).
+\item \code{plasticdb_job_error}: a problem with a job (\code{job});
+\code{plasticdb_job_failed}: it finished with status \code{error} (the message is
+the server's reason); \code{plasticdb_job_timeout}: \code{\link[=wait_job]{wait_job()}} ran out of
+time (the job keeps running on the server). Both are job errors.
 \item \code{plasticdb_checksum}: a download did not match its published SHA-256
 (\code{expected}, \code{actual}).
 \item \code{plasticdb_release_error}: a problem with the requested release

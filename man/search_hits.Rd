@@ -30,8 +30,9 @@ searched, so a pinned client gets \code{plasticdb_release_live_only}).
 \details{
 \itemize{
 \item \code{search_hits()} returns ranked hits, one row each, with \code{entity_type}
-(\code{protein}, \code{microorganism}, \code{plastic}, \code{paper}, ...), \code{route_key} (the
-accession or id to pass to the matching \verb{*_get()} function) and \code{rank}.
+(\code{protein}, \code{microorganism}, \code{plastic}, \code{paper}, ...), \code{route_key} (a
+string: the accession or id to pass to the matching \verb{*_get()} function;
+a variant's is its accession, for \code{\link[=variants_get]{variants_get()}}) and \code{rank}.
 (It is not called \code{search()}, which would mask \code{\link[base:search]{base::search()}}.)
 \item \code{search_grouped()} returns the top \code{limit} hits (at most 100) for each
 record type: a list with the overall \code{total}, a \code{groups} tibble (each

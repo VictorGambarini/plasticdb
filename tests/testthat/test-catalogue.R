@@ -141,3 +141,57 @@ test_that("dates and logicals are sent in the API's format", {
     expect_identical(q$has_structure, "true")
     expect_identical(q$min_kcat, "0.0001")
 })
+
+test_that("every route_key is a string", {
+    local_clean_env()
+    httptest2::with_mock_api({
+        hits <- search_hits("cutinase", limit = 3)
+        grouped <- search_grouped("cutinase", limit = 1)
+    })
+    expect_type(hits$route_key, "character")
+    expect_type(grouped$hits$route_key, "character")
+    expect_false(is.null(provenance(hits)))
+    mixed <- tibble::tibble(route_key = list(1199L, "PBFCTW"))
+    expect_identical(plasticdb:::route_keys_as_text(mixed)$route_key,
+        c("1199", "PBFCTW"))
+})
+
+test_that("enzyme_only reaches the organism record and the stats", {
+    local_clean_env()
+    calls <- local_api(function(req) json_response(list(id = 1L)))
+    microorganisms_get("PBCZU2", evidence_scope = "enzyme_only")
+    stats_summary(evidence_scope = "enzyme_only")
+    expect_identical(query_of(calls$urls[[1]])$evidence_scope, "enzyme_only")
+    expect_identical(query_of(calls$urls[[2]])$evidence_scope, "enzyme_only")
+    expect_error(stats_charts(evidence_scope = "enzyme_only"))
+})
+
+test_that("a merged organism names its survivor, or follows it", {
+    local_clean_env()
+    calls <- local_api(function(req) {
+        if (grepl("PBOLD1", req$url)) {
+            return(json_response(list(accession = "PBNEW1",
+                location = "/api/v1/microorganisms/PBNEW1",
+                kind = "microorganism", reason = "merged",
+                merged_into = "PBNEW1"), status = 301L,
+                headers = list(location = "/api/v1/microorganisms/PBNEW1")))
+        }
+        if (grepl("PBGONE", req$url)) {
+            return(json_response(list(detail = "deleted",
+                accession = "PBGONE", reason = "withdrawn"), status = 410L))
+        }
+        json_response(list(accession = "PBNEW1", name = "Survivor"))
+    })
+    err <- expect_error(microorganisms_get("PBOLD1"),
+        class = "plasticdb_merged")
+    expect_identical(err$kind, "microorganism")
+    expect_identical(err$merged_into, "PBNEW1")
+    expect_warning(m <- microorganisms_get("PBOLD1",
+        evidence_scope = "enzyme_only", follow_merges = TRUE),
+        class = "plasticdb_merged_warning")
+    expect_identical(m$name, "Survivor")
+    expect_identical(query_of(calls$urls[[3]])$evidence_scope, "enzyme_only")
+    gone <- expect_error(microorganisms_get("PBGONE"), class = "plasticdb_gone")
+    expect_identical(gone$accession, "PBGONE")
+    expect_identical(gone$reason, "withdrawn")
+})

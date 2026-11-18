@@ -7,7 +7,7 @@ It mirrors the Python client,
 [Bioconductor](https://bioconductor.org).
 
 > **Pre-release (0.99.x).** Every public data endpoint, release pinning,
-> provenance and citation. Analysis jobs are not included yet.
+> provenance and citation, and analysis jobs (with an API key).
 
 ## Install
 
@@ -52,6 +52,36 @@ feed <- changes(since = Sys.Date() - 7)
 downloads_proteins(tempdir(), format = "fasta", plastic = "PET")
 downloads_dataset(tempdir(), max_wait = 300)
 ```
+
+### Jobs
+
+With an API key (`PLASTICDB_API_KEY`, created at
+<https://v2.plasticdb.org/profile/api-keys>), run PlasticDB's analyses on the
+server. Inputs are file paths (plain or gzip), FASTA text or `Biostrings`
+sets:
+
+```r
+job <- annotate_genome("genome.faa.gz", release = "2026.50")
+job <- wait_job(job, timeout = 3600)
+hits <- job_results(job)          # every hit, paged: a tibble
+job_provenance(job)$reference_sha256
+job_download(job, "results/")     # the TSV with its provenance lines
+
+compare_genomes(list(K12 = "k12.faa", O157 = "o157.faa"))
+annotate_list(read.csv("taxa.csv"), genus_column = 1, species_column = 2)
+pathway_analysis(Biostrings::readAAStringSet("prot.faa"), target_plastic = "PLA")
+hmm_screen("prot.faa", target_polymers = c("PET", "PLA"))
+tree <- job_results(wait_job(build_tree(plastic = "PET", genus = "Pseudomonas")))
+tree$newick; tree$matrix          # tree$phylo with ape installed
+search_sequence("MNFPRASRLMQAAVLGGLMAVSAAATAQTNPYARGPNPT")$hits
+
+link <- job_share(job, expires_in_days = 30)
+job_results(job_shared(link$url)) # anyone with the link; no key needed
+```
+
+Each submission carries an `Idempotency-Key` (pass `idempotency_key =` to
+choose it), reused on every retry, so a retried or re-run submission returns
+the first job (`job_replayed()`) instead of a duplicate.
 
 Function names follow the Python client: `client.proteins.list()` is
 `proteins_list()`, `client.evidence.interactions()` is
@@ -102,7 +132,10 @@ connection errors are retried with backoff.
 Errors are classed conditions (`rlang::abort()`), mirroring the Python
 exceptions: `plasticdb_not_found`, `plasticdb_gone`, `plasticdb_merged`
 (field `merged_into`), `plasticdb_engineered_variant`,
-`plasticdb_authentication`, `plasticdb_validation`, `plasticdb_rate_limit`
+`plasticdb_authentication`, `plasticdb_api_key_required`,
+`plasticdb_job_failed`, `plasticdb_job_timeout`,
+`plasticdb_results_expired`, `plasticdb_idempotency_key_reused`,
+`plasticdb_payload_too_large`, `plasticdb_validation`, `plasticdb_rate_limit`
 (`retry_after`), `plasticdb_server_error`, `plasticdb_checksum` and the
 release errors (`plasticdb_release_unknown`, `plasticdb_release_live_only`,
 `plasticdb_release_unsupported_filter`, ...). All are `plasticdb_error`. See
@@ -136,6 +169,7 @@ BiocCheck::BiocCheck(`new-package` = TRUE)
 ```
 
 `Rscript tools/capture-fixtures.R` re-captures the test fixtures from the
-live anonymous API. `tests/testthat/contract/sdk-v1.json` is the server's SDK
+live anonymous API; `Rscript tools/make-job-fixtures.R` rewrites the
+synthetic job fixtures (jobs need an API key) from the Python client's. `tests/testthat/contract/sdk-v1.json` is the server's SDK
 contract (`/api/v1/openapi.sdk.json`); `test-contract.R` checks every call the
 package makes against it.

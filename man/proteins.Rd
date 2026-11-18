@@ -66,7 +66,7 @@ proteins_engineered_parents(
 
 \item{client}{A \code{\link[=plasticdb_client]{plasticdb_client()}}.}
 
-\item{accession, ref}{A protein accession (\code{ref} also takes a numeric id).}
+\item{accession, ref}{A protein accession or numeric id.}
 
 \item{view}{\code{"full"} or \code{"summary"} (leaves out the per-record evidence
 lists, much smaller for well-studied enzymes).}
@@ -102,12 +102,16 @@ with the evidence behind each link.
 types and variants; \verb{kind =} narrows). Like every entity list, only
 records with a positive result are listed unless \verb{polarity =} or
 \code{include_negative = TRUE} says otherwise.
-\item \code{proteins_get()} returns one protein by accession (\code{PB...}, any case).
-An engineered variant's accession returns the variant, as
+\item \code{proteins_get()} returns one protein by accession (\code{PB...}, any case)
+or numeric id. An engineered variant's accession returns the variant, as
 \code{\link[=variants_get]{variants_get()}} does. A merged accession signals \code{plasticdb_merged}
 naming the survivor (\code{merged_into}); with \code{follow_merges = TRUE} the
 survivor is returned instead, with a \code{plasticdb_merged_warning}. A
-withdrawn record signals \code{plasticdb_gone}.
+withdrawn record signals \code{plasticdb_gone} (\code{reason} \code{"withdrawn"}).
+The per-protein tables of a merged accession signal \code{plasticdb_merged}
+too (its \code{location} is the survivor's table); given a variant's
+accession they signal \code{plasticdb_engineered_variant}, since variants
+have none (its record carries them: \code{\link[=variants_get]{variants_get()}}).
 \item \code{proteins_interactions()} is the protein's evidence spine: \code{"direct"}
 (assayed on it) or \code{"indirect"} (via its organism) interactions, as one
 row per interaction, experiment or observation (\code{level}).
@@ -120,7 +124,8 @@ variants; \code{proteins_variants()} its engineered variants, with sequences.
 \item \code{proteins_fasta()} and \code{proteins_structure()} are one protein's FASTA
 record and primary structure (PDB text, or a file with \code{path});
 \code{proteins_lineage()} a wild type with every variant engineered from it;
-\code{proteins_engineered_parents()} the wild types that have variants. These
+\code{proteins_engineered_parents()} the wild types that have variants. A
+variant's accession gives the variant's FASTA record or structure. These
 four are live only: a pinned client gets \code{plasticdb_release_live_only}
 (for a pinned structure use \code{\link[=downloads_structure]{downloads_structure()}}).
 }

@@ -11,15 +11,22 @@
 # in_contract: FALSE for the few calls outside the SDK contract.
 # raw_params:  path parameters that may contain "/".
 # root:        resolve against the server root instead of /api/v1.
+# idempotency: a create operation that honours an Idempotency-Key header; the
+#              client sends one with every attempt, so with an API key a POST
+#              there is retried like a GET.
+# retry_safe:  a POST that creates nothing (a synchronous search), so it is
+#              retried like a GET too.
 
 ep <- function(method, path, pinnable = TRUE, live_only = FALSE,
-                in_contract = TRUE, raw_params = character(), root = FALSE) {
+                in_contract = TRUE, raw_params = character(), root = FALSE,
+                idempotency = FALSE, retry_safe = FALSE) {
     if (live_only && !pinnable) {
         stop(path, ": live_only implies pinnable", call. = FALSE)
     }
     list(method = method, path = path, pinnable = pinnable,
         live_only = live_only, in_contract = in_contract,
-        raw_params = raw_params, root = root)
+        raw_params = raw_params, root = root, idempotency = idempotency,
+        retry_safe = retry_safe)
 }
 
 ENDPOINTS <- list(
@@ -48,8 +55,8 @@ ENDPOINTS <- list(
     engineering_get = ep("GET", "/engineering/proteins/{accession}",
         live_only = TRUE),
 
-    variants_get = ep("GET", "/variants/{ref}", live_only = TRUE),
-    variants_fasta = ep("GET", "/variants/{ref}/fasta", live_only = TRUE),
+    variants_get = ep("GET", "/variants/{ref}"),
+    variants_fasta = ep("GET", "/variants/{ref}/fasta"),
     variants_structure = ep("GET", "/variants/{ref}/structure",
         live_only = TRUE),
 
@@ -115,7 +122,33 @@ ENDPOINTS <- list(
     dl_dataset_zip = ep("GET", "/downloads/dataset.zip", live_only = TRUE),
     dl_dataset_json = ep("GET", "/downloads/dataset.json", live_only = TRUE),
     dl_search_zip = ep("GET", "/downloads/search.zip", live_only = TRUE),
-    dl_search_json = ep("GET", "/downloads/search.json", live_only = TRUE)
+    dl_search_json = ep("GET", "/downloads/search.json", live_only = TRUE),
+
+    # Jobs. Submissions take the client's (or the call's) release; job reads
+    # never do: a job answers with the release it ran against (and says so in
+    # its headers).
+    jobs_submit = ep("POST", "/jobs", idempotency = TRUE),
+    tree_build = ep("POST", "/tree/build", idempotency = TRUE),
+    search_sequence = ep("POST", "/bioinformatics/search-sequence",
+        retry_safe = TRUE),
+    jobs_list = ep("GET", "/jobs", pinnable = FALSE),
+    jobs_get = ep("GET", "/jobs/{job_id}", pinnable = FALSE),
+    jobs_results = ep("GET", "/jobs/{job_id}/results", pinnable = FALSE),
+    jobs_download = ep("GET", "/jobs/{job_id}/download", pinnable = FALSE),
+    jobs_comparison = ep("GET", "/jobs/{job_id}/comparison",
+        pinnable = FALSE),
+    jobs_shares = ep("GET", "/jobs/{job_id}/shares", pinnable = FALSE),
+    jobs_share_create = ep("POST", "/jobs/{job_id}/shares", pinnable = FALSE,
+        idempotency = TRUE),
+    jobs_share_revoke = ep("DELETE", "/jobs/{job_id}/shares/{share_id}",
+        pinnable = FALSE),
+    shared_get = ep("GET", "/jobs/shared/{token}", pinnable = FALSE),
+    shared_results = ep("GET", "/jobs/shared/{token}/results",
+        pinnable = FALSE),
+    shared_download = ep("GET", "/jobs/shared/{token}/download",
+        pinnable = FALSE),
+    shared_comparison = ep("GET", "/jobs/shared/{token}/comparison",
+        pinnable = FALSE)
 )
 
 # The URL path of an endpoint with its path parameters filled in (escaped).

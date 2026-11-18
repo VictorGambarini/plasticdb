@@ -4,6 +4,6 @@ structure(list(method = "GET", url = "pdb/microorganisms/taxonomy/genus/Pseudide
         link = "<https://creativecommons.org/licenses/by/4.0/>; rel=\"license\"", 
         `x-plasticdb-release-source` = "live", `content-length` = "771"), class = "httr2_headers"), 
     body = charToRaw("{\"rank\":\"genus\",\"name\":\"Pseudideonella\",\"microbe_total\":1,\"evidenced_microbe_total\":1,\"protein_total\":4,\"plastic_total\":14,\"paper_total\":152,\"top_plastics\":[{\"name\":\"Aromatic polyester (other)\",\"count\":1},{\"name\":\"Impranil\",\"count\":1},{\"name\":\"PBAT\",\"count\":1}],\"top_environments\":[{\"environment\":\"industrial\",\"count\":3},{\"environment\":\"plastic_surface\",\"count\":1}],\"temperature_class\":{\"psychrophile\":0,\"mesophile\":0,\"thermophile\":0,\"unknown\":1},\"top_microorganisms\":[{\"id\":2,\"name\":\"Pseudideonella sakaiensis\",\"tax_id\":1547922,\"accession\":\"PB3E8R\",\"protein_count\":4,\"evidence_count\":184}]}"), 
-    timing = c(redirect = 0.046413, namelookup = 7.9e-05, connect = 7.9e-05, 
-    pretransfer = 3e-04, starttransfer = 0.243758, total = 0.244031
+    timing = c(redirect = 0.030329, namelookup = 6.1e-05, connect = 6.1e-05, 
+    pretransfer = 0.00023, starttransfer = 0.24871, total = 0.248844
     ), cache = new.env(parent = emptyenv())), class = "httr2_response")

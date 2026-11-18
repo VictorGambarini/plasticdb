@@ -13,7 +13,7 @@ microorganisms_list(..., limit = Inf, client = plasticdb_client())
 
 microorganisms_get(
   ref,
-  evidence_scope = c("organism_or_enzyme", "whole_organism"),
+  evidence_scope = c("organism_or_enzyme", "whole_organism", "enzyme_only"),
   follow_merges = FALSE,
   client = plasticdb_client()
 )
@@ -41,8 +41,8 @@ microorganisms_taxonomy(rank, name, client = plasticdb_client())
 
 \item{ref}{An NCBI tax-id or a PlasticDB accession.}
 
-\item{evidence_scope}{\code{"organism_or_enzyme"} (default) or
-\code{"whole_organism"}.}
+\item{evidence_scope}{\code{"organism_or_enzyme"} (default),
+\code{"whole_organism"} or \code{"enzyme_only"}.}
 
 \item{follow_merges}{Return the survivor of a merged accession.}
 
@@ -63,9 +63,12 @@ Microorganisms with evidence of acting on plastics.
 are filters too: \code{genus = "Pseudomonas"}, \code{class = "Bacilli"} (or
 \code{class_}, as in the Python client).
 \item \code{microorganisms_get()} returns one organism by NCBI tax-id or PlasticDB
-accession. \code{evidence_scope = "whole_organism"} counts only assays on the
-organism itself, not on enzymes purified from it. Merges behave as in
-\code{\link[=proteins_get]{proteins_get()}}.
+accession. \code{evidence_scope = "whole_organism"} keeps only assays on the
+organism itself, \code{"enzyme_only"} only the evidence of enzymes purified
+from it (\code{interactions} empty, \code{indirect_interactions} kept). A merged
+organism signals \code{plasticdb_merged} (\code{kind} \code{"microorganism"}; with
+\code{follow_merges = TRUE} the survivor is returned), a withdrawn one
+\code{plasticdb_gone}, as in \code{\link[=proteins_get]{proteins_get()}}.
 \item \code{microorganisms_names()} is every organism's \code{id} and \code{name},
 \code{microorganisms_lineage_levels()} the taxon names at each rank (narrowed
 by the ranks given), and \code{microorganisms_taxonomy()} aggregate statistics

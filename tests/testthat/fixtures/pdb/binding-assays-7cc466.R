@@ -5,5 +5,5 @@ structure(list(method = "GET", url = "pdb/binding-assays?limit=2&offset=0",
         `x-plasticdb-release-source` = "live", `content-length` = "43"), class = "httr2_headers"), 
     body = charToRaw("{\"items\":[],\"total\":0,\"offset\":0,\"limit\":2}"), 
     timing = c(redirect = 0, namelookup = 3.2e-05, connect = 3.2e-05, 
-    pretransfer = 0.000115, starttransfer = 0.071356, total = 0.071505
+    pretransfer = 0.000117, starttransfer = 0.031603, total = 0.031682
     ), cache = new.env(parent = emptyenv())), class = "httr2_response")

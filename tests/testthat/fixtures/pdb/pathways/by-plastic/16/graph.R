@@ -3,9 +3,9 @@ structure(list(method = "GET", url = "pdb/pathways/by-plastic/16/graph",
         `content-encoding` = "gzip", `content-type` = "application/json", 
         etag = "W/\"none-3397a7d0e6759f954f91fd1a\"", link = "<https://creativecommons.org/licenses/by/4.0/>; rel=\"license\"", 
         vary = "Accept-Encoding", `x-plasticdb-release-source` = "live", 
-        `x-ratelimit-limit` = "200", `x-ratelimit-remaining` = "196", 
+        `x-ratelimit-limit` = "200", `x-ratelimit-remaining` = "198", 
         `content-length` = "1087"), class = "httr2_headers"), 
     body = charToRaw("{\"nodes\":[{\"data\":{\"id\":\"compartment-extracellular\",\"label\":\"Extracellular\",\"type\":\"compartment\"}},{\"data\":{\"id\":\"compartment-cytoplasm\",\"label\":\"Cytoplasm\",\"type\":\"compartment\"}},{\"data\":{\"id\":\"compound-1@extracellular\",\"compound_id\":1,\"label\":\"Polyethylene terephthalate\",\"formula\":\"(C10H8O4)n\",\"type\":\"compound\",\"compartment\":\"extracellular\",\"parent\":\"compartment-extracellular\"}}],\"edges\":[{\"data\":{\"id\":\"step-1\",\"source\":\"compound-1@extracellular\",\"target\":\"compound-3@extracellular\",\"label\":\"PETase\",\"step_order\":1,\"step_type\":\"conversion\",\"accessions\":[\"WP_054022242.1\"],\"protein_id\":null,\"ec_number\":\"3.1.1.101\",\"ec_numbers\":[\"3.1.1.101\"],\"description\":\"The principal PETase reaction.\",\"evidence\":\"\"}},{\"data\":{\"id\":\"step-2\",\"source\":\"compound-1@extracellular\",\"target\":\"compound-2@extracellular\",\"label\":\"PETase\",\"step_order\":2,\"step_type\":\"conversion\",\"accessions\":[\"WP_054022242.1\"],\"protein_id\":null,\"ec_number\":\"3.1.1.101\",\"ec_numbers\":[\"3.1.1.101\"],\"description\":\"Minor PETase product.\",\"evidence\":\"\"}},{\"data\":{\"id\":\"step-3\",\"source\":\"compound-1@extracellular\",\"target\":\"compound-4@extracellular\",\"label\":\"PETase\",\"step_order\":3,\"step_type\":\"conversion\",\"accessions\":[\"WP_054022242.1\"],\"protein_id\":null,\"ec_number\":\"3.1.1.101\",\"ec_numbers\":[\"3.1.1.101\"],\"description\":\"Minor PETase product; full hydrolysis without a MHET intermediate.\",\"evidence\":\"\"}}]}"), 
-    timing = c(redirect = 0, namelookup = 4e-05, connect = 4e-05, 
-    pretransfer = 0.00014, starttransfer = 0.055838, total = 0.056403
+    timing = c(redirect = 0, namelookup = 3.9e-05, connect = 3.9e-05, 
+    pretransfer = 0.000157, starttransfer = 0.046608, total = 0.046751
     ), cache = new.env(parent = emptyenv())), class = "httr2_response")

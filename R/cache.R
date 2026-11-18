@@ -9,7 +9,8 @@
 
 CACHE_FORMAT <- 1L
 KEPT_HEADERS <- c("x-plasticdb-release", "x-plasticdb-release-source",
-    "x-plasticdb-snapshot-unavailable", "content-type",
+    "x-plasticdb-snapshot-unavailable", "x-plasticdb-sha256",
+    "x-plasticdb-source-sha256", "etag", "content-type",
     "content-disposition", "link")
 
 pdb_bfc <- function(client) {

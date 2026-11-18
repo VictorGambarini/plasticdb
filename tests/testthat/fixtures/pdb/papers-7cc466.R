@@ -3,9 +3,9 @@ structure(list(method = "GET", url = "pdb/papers?limit=2&offset=0",
         `content-encoding` = "gzip", `content-type` = "application/json", 
         etag = "W/\"none-2166a759815d9109a5d83a63\"", link = "<https://creativecommons.org/licenses/by/4.0/>; rel=\"license\"", 
         vary = "Accept-Encoding", `x-plasticdb-release-source` = "live", 
-        `x-ratelimit-limit` = "200", `x-ratelimit-remaining` = "197", 
+        `x-ratelimit-limit` = "200", `x-ratelimit-remaining` = "198", 
         `content-length` = "645"), class = "httr2_headers"), 
     body = charToRaw("{\"total\":1418,\"items\":[{\"id\":1262,\"citation\":\"Shao, C., Shen, X., Long, J., Cui, Z., Chen, B., & Tan, T. (2027). Deep learning-driven synergistic engineering of PET hydrolase for post-consumer PET depolymerization. Synthetic and Systems Biotechnology, 15, 170-180. https://doi.org/10.1016/j.synbio.2026.06.003\",\"title\":\"Deep Learning-driven synergistic engineering of PET hydrolase for post-consumer PET depolymerization.\",\"doi\":\"10.1016/j.synbio.2026.06.003\",\"year\":2027,\"authors\":\"Shao, C.; Shen, X.; Long, J.; Cui, Z.; Chen, B.; Tan, T.\",\"journal\":\"Synthetic and Systems Biotechnology\",\"corresponding_author_country\":\"China\",\"updated_at\":\"2026-10-15T20:39:12.794792Z\",\"pmid\":\"42433475\"},{\"id\":1579,\"citation\":\"Xiao, R., Li, Y., Liu, P., & Chou, H. H. (2027). Synthetic microalgal–bacterial symbiotic system integrating oxidase-protease fusion enzyme for simultaneous removal of recalcitrant nitrogen-containing organic compounds and PET microplastics. Bioresource Technology, 463, 135685. https://doi.org/10.1016/j.biortech.2026.135685\",\"title\":\"Synthetic microalgal-bacterial symbiotic system integrating oxidase-protease fusion enzyme for simultaneous removal of recalcitrant nitrogen-containing organic compounds and PET microplastics.\",\"doi\":\"10.1016/j.biortech.2026.135685\",\"year\":2027,\"authors\":\"Xiao, R.; Li, Y.; Liu, P.; Chou, H.H.\",\"journal\":\"Bioresource Technology\",\"corresponding_author_country\":\"China\",\"updated_at\":\"2026-11-10T06:32:41.471985Z\",\"pmid\":\"42628764\"}]}"), 
-    timing = c(redirect = 0, namelookup = 3.5e-05, connect = 3.6e-05, 
-    pretransfer = 0.000141, starttransfer = 0.042459, total = 0.0428
+    timing = c(redirect = 0, namelookup = 3.8e-05, connect = 3.8e-05, 
+    pretransfer = 0.000144, starttransfer = 0.051266, total = 0.051388
     ), cache = new.env(parent = emptyenv())), class = "httr2_response")
