@@ -24,8 +24,7 @@ citation still names the paper (with a warning).
 To cite this R package itself, use \code{citation("plasticdb")}.
 }
 \examples{
-\dontrun{
-cite()
-toBibtex(cite(plasticdb_client(release = "2026.50")))
-}
+ref <- cite()
+ref
+toBibtex(ref)
 }

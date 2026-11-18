@@ -29,21 +29,22 @@
 #' @return A tibble with provenance, or a `plasticdb_record` list.
 #' @name evidence
 #' @examples
-#' \dontrun{
-#' obs <- evidence_interactions("PBFCTW", level = "observation")
-#' evidence_constructs(protein = "PBFCTW")
-#' evidence_binding_assays(plastic = "PET")
+#' obs <- evidence_interactions("PBFCTW", level = "observation", limit = 2)
+#' dim(obs)
+#' \donttest{
+#' constructs <- evidence_constructs(protein = "PBFCTW", limit = 2)
+#' as_aastringset(constructs)
 #' }
 NULL
 
 #' @rdname evidence
 #' @export
 evidence_interactions <- function(protein,
-                                  kind = c("all", "direct", "indirect"),
-                                  level = c("interaction", "experiment",
-                                      "observation"),
-                                  include_sequenceless = FALSE, limit = Inf,
-                                  client = plasticdb_client()) {
+                                    kind = c("all", "direct", "indirect"),
+                                    level = c("interaction", "experiment",
+                                        "observation"),
+                                    include_sequenceless = FALSE, limit = Inf,
+                                    client = plasticdb_client()) {
     proteins_interactions(protein, kind = kind, level = level,
         include_sequenceless = include_sequenceless, limit = limit,
         client = client)
@@ -52,7 +53,7 @@ evidence_interactions <- function(protein,
 #' @rdname evidence
 #' @export
 evidence_kinetics <- function(protein, limit = Inf,
-                              client = plasticdb_client()) {
+                                client = plasticdb_client()) {
     proteins_kinetics(protein, limit = limit, client = client)
 }
 
@@ -99,7 +100,7 @@ evidence_construct <- function(construct_id, client = plasticdb_client()) {
 #' @rdname evidence
 #' @export
 evidence_construct_structures <- function(construct_id,
-                                          client = plasticdb_client()) {
+                                            client = plasticdb_client()) {
     items_tibble(client, ENDPOINTS$constructs_structures,
         list(construct_id = construct_id))
 }
@@ -107,7 +108,7 @@ evidence_construct_structures <- function(construct_id,
 #' @rdname evidence
 #' @export
 evidence_preparations <- function(..., limit = Inf,
-                                  client = plasticdb_client()) {
+                                    client = plasticdb_client()) {
     params <- check_filters(list(...), MATERIAL_FILTERS,
         "evidence_preparations")
     list_tibble(client, ENDPOINTS$preparations_list, params, limit = limit)
@@ -123,14 +124,14 @@ evidence_preparation <- function(preparation_id, client = plasticdb_client()) {
 #' @rdname evidence
 #' @export
 evidence_experiment_preparations <- function(experiment_id,
-                                             client = plasticdb_client()) {
+                                                client = plasticdb_client()) {
     items_tibble(client, ENDPOINTS$experiment_preparations,
         list(experiment_id = experiment_id))
 }
 
 # An endpoint answering a plain array (or an {items} object) as a tibble.
 items_tibble <- function(client, endpoint, path_params = list(),
-                         params = list(), kind = NULL) {
+                            params = list(), kind = NULL) {
     result <- pdb_request(client, endpoint, params, path_params)
     data <- result$data
     items <- if (is_object(data)) data$items %||% list() else data %||% list()

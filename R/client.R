@@ -20,15 +20,15 @@ DEFAULT_BASE_URL <- "https://v2.plasticdb.org/api/v1"
 #' Each setting is resolved, first match wins, from the argument, then the R
 #' option, then the environment variable, then the default:
 #'
-#' | Argument | Option | Environment variable | Default |
-#' |---|---|---|---|
-#' | `api_key` | | `PLASTICDB_API_KEY` | none (reads are anonymous) |
-#' | `release` | `plasticdb.release` | `PLASTICDB_RELEASE` | none (live database) |
-#' | `base_url` | `plasticdb.base_url` | `PLASTICDB_BASE_URL` | `https://v2.plasticdb.org/api/v1` |
-#' | `cache` | `plasticdb.cache` | `PLASTICDB_CACHE_DIR` | `TRUE` |
-#' | `timeout` | `plasticdb.timeout` | | 30 seconds |
-#' | `max_retries` | `plasticdb.max_retries` | | 3 |
-#' | `max_retry_wait` | `plasticdb.max_retry_wait` | | 60 seconds |
+#' * `api_key`: `PLASTICDB_API_KEY`; default none (reads are anonymous).
+#' * `release`: option `plasticdb.release`, `PLASTICDB_RELEASE`; default
+#'   none (the live database).
+#' * `base_url`: option `plasticdb.base_url`, `PLASTICDB_BASE_URL`; default
+#'   `https://v2.plasticdb.org/api/v1`.
+#' * `cache`: option `plasticdb.cache`, `PLASTICDB_CACHE_DIR`; default `TRUE`.
+#' * `timeout`, `max_retries`, `max_retry_wait`: options
+#'   `plasticdb.timeout`, `plasticdb.max_retries`, `plasticdb.max_retry_wait`;
+#'   defaults 30 seconds, 3 and 60 seconds.
 #'
 #' A pinned client sends `?release=` on every read; the server answers from
 #' that release's snapshot. Answers from a past release are immutable, so they
@@ -63,8 +63,8 @@ DEFAULT_BASE_URL <- "https://v2.plasticdb.org/api/v1"
 #' plasticdb_client()$release
 #' options(old)
 plasticdb_client <- function(api_key = NULL, release = NULL, base_url = NULL,
-                             cache = NULL, timeout = NULL,
-                             max_retries = NULL, max_retry_wait = NULL) {
+                                cache = NULL, timeout = NULL,
+                                max_retries = NULL, max_retry_wait = NULL) {
     api_key <- clean(api_key) %||% clean(Sys.getenv("PLASTICDB_API_KEY"))
     release <- clean(release) %||% clean(getOption("plasticdb.release")) %||%
         clean(Sys.getenv("PLASTICDB_RELEASE"))

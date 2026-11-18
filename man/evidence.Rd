@@ -93,9 +93,10 @@ assayed.
 }
 }
 \examples{
-\dontrun{
-obs <- evidence_interactions("PBFCTW", level = "observation")
-evidence_constructs(protein = "PBFCTW")
-evidence_binding_assays(plastic = "PET")
+obs <- evidence_interactions("PBFCTW", level = "observation", limit = 2)
+dim(obs)
+\donttest{
+constructs <- evidence_constructs(protein = "PBFCTW", limit = 2)
+as_aastringset(constructs)
 }
 }

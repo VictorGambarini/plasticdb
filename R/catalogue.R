@@ -25,10 +25,10 @@
 #' @return A tibble with provenance, or a `plasticdb_record` list.
 #' @name microorganisms
 #' @examples
-#' \dontrun{
-#' microorganisms_list(genus = "Pseudomonas", plastic = "PET")
+#' microorganisms_list(genus = "Pseudomonas", plastic = "PET", limit = 3)
+#' \donttest{
 #' microorganisms_get(1547922)$name
-#' microorganisms_taxonomy("genus", "Ideonella")
+#' microorganisms_taxonomy("genus", "Ideonella")$paper_total
 #' }
 NULL
 
@@ -44,10 +44,10 @@ microorganisms_list <- function(..., limit = Inf, client = plasticdb_client()) {
 #' @rdname microorganisms
 #' @export
 microorganisms_get <- function(ref,
-                               evidence_scope = c("organism_or_enzyme",
-                                   "whole_organism"),
-                               follow_merges = FALSE,
-                               client = plasticdb_client()) {
+                                evidence_scope = c("organism_or_enzyme",
+                                    "whole_organism"),
+                                follow_merges = FALSE,
+                                client = plasticdb_client()) {
     evidence_scope <- match.arg(evidence_scope)
     current <- ref
     for (i in seq_len(MAX_MERGE_HOPS)) {
@@ -77,9 +77,9 @@ microorganisms_names <- function(client = plasticdb_client()) {
 #' @rdname microorganisms
 #' @export
 microorganisms_lineage_levels <- function(domain = NULL, kingdom = NULL,
-                                          phylum = NULL, class = NULL,
-                                          order = NULL, family = NULL,
-                                          client = plasticdb_client()) {
+                                            phylum = NULL, class = NULL,
+                                            order = NULL, family = NULL,
+                                            client = plasticdb_client()) {
     params <- list(domain = domain, kingdom = kingdom, phylum = phylum,
         class = class, order = order, family = family)
     result <- pdb_request(client, ENDPOINTS$microorganisms_levels, params)
@@ -109,19 +109,23 @@ microorganisms_taxonomy <- function(rank, name, client = plasticdb_client()) {
 #'
 #' @inheritParams proteins
 #' @param plastic_id A plastic's numeric id (16 is PET).
-#' @param microorganism_limit,microorganism_offset,microorganism_sort_by,microorganism_sort_order,microorganism_polarity
-#'   The page of organisms embedded in the record.
-#' @param protein_limit,protein_offset,protein_sort_by,protein_sort_order,protein_polarity
-#'   The page of proteins embedded in the record.
+#' @param microorganism_limit,microorganism_offset The page of organisms
+#'   embedded in the record.
+#' @param microorganism_sort_by,microorganism_sort_order How it is sorted.
+#' @param microorganism_polarity Which outcome it lists.
+#' @param protein_limit,protein_offset The page of proteins embedded in the
+#'   record.
+#' @param protein_sort_by,protein_sort_order How it is sorted.
+#' @param protein_polarity Which outcome it lists.
 #' @param evidence_scope `"organism_or_enzyme"` or `"whole_organism"`.
 #'
 #' @return A tibble with provenance, or a `plasticdb_record` list.
 #' @name plastics
 #' @examples
-#' \dontrun{
-#' plastics_list(has_evidence = TRUE)
-#' pet <- plastics_get(16, protein_limit = 10)
-#' pet$name
+#' plastics_list(has_evidence = TRUE, limit = 5)[, c("id", "name")]
+#' \donttest{
+#' pet <- plastics_get(16, microorganism_limit = 2, protein_limit = 2)
+#' pet$full_name
 #' }
 NULL
 
@@ -136,20 +140,21 @@ plastics_list <- function(..., limit = Inf, client = plasticdb_client()) {
 #' @rdname plastics
 #' @export
 plastics_get <- function(plastic_id, microorganism_limit = 25,
-                         microorganism_offset = 0,
-                         microorganism_sort_by = c("papers", "result", "name"),
-                         microorganism_sort_order = c("desc", "asc"),
-                         microorganism_polarity = c("positive", "negative",
-                             "inconclusive"),
-                         protein_limit = 25, protein_offset = 0,
-                         protein_sort_by = c("id", "papers", "result",
-                             "plasticdb_id", "accession", "name"),
-                         protein_sort_order = c("desc", "asc"),
-                         protein_polarity = c("positive", "negative",
-                             "inconclusive"),
-                         evidence_scope = c("organism_or_enzyme",
-                             "whole_organism"),
-                         client = plasticdb_client()) {
+                            microorganism_offset = 0,
+                            microorganism_sort_by = c("papers", "result",
+                                "name"),
+                            microorganism_sort_order = c("desc", "asc"),
+                            microorganism_polarity = c("positive", "negative",
+                                "inconclusive"),
+                            protein_limit = 25, protein_offset = 0,
+                            protein_sort_by = c("id", "papers", "result",
+                                "plasticdb_id", "accession", "name"),
+                            protein_sort_order = c("desc", "asc"),
+                            protein_polarity = c("positive", "negative",
+                                "inconclusive"),
+                            evidence_scope = c("organism_or_enzyme",
+                                "whole_organism"),
+                            client = plasticdb_client()) {
     params <- list(
         microorganism_limit = microorganism_limit,
         microorganism_offset = microorganism_offset,
@@ -196,8 +201,9 @@ plastics_names <- function(client = plasticdb_client()) {
 #' @return A tibble with provenance, a `plasticdb_record` list, or text.
 #' @name papers
 #' @examples
-#' \dontrun{
-#' papers_list(protein = "PBFCTW", min_year = 2020)
+#' papers_list(protein = "PBFCTW", min_year = 2024, limit = 3)[, c("year",
+#'     "title")]
+#' \donttest{
 #' papers_get(1262)$title
 #' cat(papers_export(1262))
 #' }
@@ -227,7 +233,7 @@ papers_footprint <- function(paper_id, client = plasticdb_client()) {
 #' @rdname papers
 #' @export
 papers_export <- function(paper_id = NULL, ..., format = c("bibtex", "ris"),
-                          path = NULL, client = plasticdb_client()) {
+                            path = NULL, client = plasticdb_client()) {
     format <- match.arg(format)
     params <- list(format = format)
     filters <- list(...)

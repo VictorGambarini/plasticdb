@@ -71,9 +71,7 @@ provenance <- function(x = NULL, client = plasticdb_client()) {
 #' @return A string, or `NULL` when the server cannot be reached.
 #' @export
 #' @examples
-#' \dontrun{
 #' server_version()
-#' }
 server_version <- function(client = plasticdb_client()) {
     client <- check_client(client)
     known <- .state$server_version[[client$base_url]]
@@ -106,10 +104,9 @@ server_version <- function(client = plasticdb_client()) {
 #' @return A `bibentry` with two entries: the dataset and the paper.
 #' @export
 #' @examples
-#' \dontrun{
-#' cite()
-#' toBibtex(cite(plasticdb_client(release = "2026.50")))
-#' }
+#' ref <- cite()
+#' ref
+#' toBibtex(ref)
 cite <- function(client = plasticdb_client()) {
     client <- check_client(client)
     rel <- tryCatch({
@@ -138,8 +135,8 @@ cite <- function(client = plasticdb_client()) {
 }
 
 citation_entries <- function(client, version, doi, text, live,
-                             released_at = NULL, license = DATA_LICENSE,
-                             license_url = DATA_LICENSE_URL) {
+                                released_at = NULL, license = DATA_LICENSE,
+                                license_url = DATA_LICENSE_URL) {
     year <- if (!is.null(released_at)) substr(released_at, 1, 4) else
         format(Sys.Date(), "%Y")
     if (live || is.null(version)) {
@@ -152,7 +149,8 @@ citation_entries <- function(client, version, doi, text, live,
         title <- sprintf("PlasticDB dataset release %s", version)
         note <- sprintf("Dataset release %s", version)
         if (is.null(text)) {
-            text <- sprintf("PlasticDB dataset release %s. University of Auckland.",
+            text <- sprintf(
+                "PlasticDB dataset release %s. University of Auckland.",
                 version)
             if (!is.null(doi)) text <- paste0(text, " https://doi.org/", doi)
         }

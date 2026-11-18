@@ -4,6 +4,9 @@
 \alias{plasticdb-conditions}
 \alias{plasticdb_error}
 \title{Errors and warnings raised by plasticdb}
+\value{
+Not a function: this page documents the condition classes.
+}
 \description{
 Every error this package raises from the API is a condition of class
 \code{plasticdb_error}, signalled with \code{\link[rlang:abort]{rlang::abort()}}, so it can be caught by
@@ -14,36 +17,41 @@ belongs to: an unknown release is both a \code{plasticdb_release_unknown} and a
 \code{plasticdb_gone}.
 }
 \details{
-\tabular{lll}{
-   Class \tab Raised when \tab Extra fields \cr
-   \code{plasticdb_error} \tab any of the below \tab \code{status}, \code{detail}, \code{response_body}, \code{url} \cr
-   \code{plasticdb_connection_error} \tab the server could not be reached \tab  \cr
-   \code{plasticdb_timeout} \tab a request timed out (also a connection error) \tab  \cr
-   \code{plasticdb_unexpected_response} \tab an answer this package does not understand \tab  \cr
-   \code{plasticdb_bad_request} \tab 400 \tab  \cr
-   \code{plasticdb_authentication} \tab 401: no, invalid or expired API key \tab  \cr
-   \code{plasticdb_permission_denied} \tab 403 \tab  \cr
-   \code{plasticdb_not_found} \tab 404 \tab  \cr
-   \code{plasticdb_gone} \tab 410: the record was withdrawn \tab  \cr
-   \code{plasticdb_merged} \tab the accession was merged (also \code{plasticdb_gone}) \tab \code{merged_into}, \code{location}, \code{kind} \cr
-   \code{plasticdb_engineered_variant} \tab a protein call given a variant's accession \tab \code{accession}, \code{location} \cr
-   \code{plasticdb_conflict} \tab 409 \tab  \cr
-   \code{plasticdb_payload_too_large} \tab 413 \tab  \cr
-   \code{plasticdb_validation} \tab 422: a parameter was invalid \tab \code{errors} \cr
-   \code{plasticdb_rate_limit} \tab 429 beyond the retry budget \tab \code{retry_after} \cr
-   \code{plasticdb_server_error} \tab 5xx \tab  \cr
-   \code{plasticdb_service_unavailable} \tab 503 (also a server error) \tab \code{retry_after} \cr
-   \code{plasticdb_checksum} \tab a download did not match its published SHA-256 \tab \code{expected}, \code{actual} \cr
-   \code{plasticdb_release_error} \tab a problem with the requested release \tab \code{release}, \code{current_release}, \code{reason} \cr
-   \code{plasticdb_release_not_available} \tab the release cannot answer at all \tab  \cr
-   \code{plasticdb_release_unknown} \tab 404 \code{unknown} (also not found) \tab  \cr
-   \code{plasticdb_release_no_artefacts} \tab 404 \code{no_artefacts} (also not found) \tab  \cr
-   \code{plasticdb_release_not_mounted} \tab 503 \code{not_mounted} (also service unavailable) \tab  \cr
-   \code{plasticdb_release_unsupported} \tab the release cannot answer this call \tab  \cr
-   \code{plasticdb_release_live_only} \tab 409 \code{live_only}: the endpoint is live only (also a conflict) \tab  \cr
-   \code{plasticdb_release_unsupported_filter} \tab 422 \code{release_unsupported} (also validation) \tab \code{parameters} \cr
+Every condition has the fields \code{status} (the HTTP status), \code{detail} (the
+server's message), \code{response_body} and \code{url}. The classes, most general
+first (extra fields in brackets):
+\itemize{
+\item \code{plasticdb_error}: any of the below.
+\item \code{plasticdb_connection_error}: the server could not be reached;
+\code{plasticdb_timeout}: a request timed out (also a connection error).
+\item \code{plasticdb_unexpected_response}: an answer this package does not
+understand.
+\item \code{plasticdb_bad_request} (400), \code{plasticdb_authentication} (401: no,
+invalid or expired API key), \code{plasticdb_permission_denied} (403),
+\code{plasticdb_not_found} (404), \code{plasticdb_conflict} (409),
+\code{plasticdb_gone} (410: the record was withdrawn),
+\code{plasticdb_payload_too_large} (413).
+\item \code{plasticdb_merged}: the accession was merged; also \code{plasticdb_gone}
+(\code{merged_into}, \code{location}, \code{kind}).
+\item \code{plasticdb_engineered_variant}: a per-protein call given a variant's
+accession (\code{accession}, \code{location}).
+\item \code{plasticdb_validation} (422): a parameter was invalid (\code{errors}).
+\item \code{plasticdb_rate_limit} (429) beyond the retry budget (\code{retry_after}).
+\item \code{plasticdb_server_error} (5xx); \code{plasticdb_service_unavailable} (503,
+also a server error; \code{retry_after}).
+\item \code{plasticdb_checksum}: a download did not match its published SHA-256
+(\code{expected}, \code{actual}).
+\item \code{plasticdb_release_error}: a problem with the requested release
+(\code{release}, \code{current_release}, \code{reason}). Its subclasses:
+\code{plasticdb_release_not_available}, the release cannot answer at all,
+with \code{plasticdb_release_unknown} (404 \code{unknown}, also not found),
+\code{plasticdb_release_no_artefacts} (404 \code{no_artefacts}, also not found)
+and \code{plasticdb_release_not_mounted} (503 \code{not_mounted}, also service
+unavailable); and \code{plasticdb_release_unsupported}, the release cannot
+answer this call, with \code{plasticdb_release_live_only} (409 \code{live_only},
+also a conflict) and \code{plasticdb_release_unsupported_filter} (422
+\code{release_unsupported}, also validation; \code{parameters}).
 }
-
 
 A function given an argument it does not take (an unknown filter, say)
 signals \code{plasticdb_argument_error} before anything is sent.
@@ -53,10 +61,9 @@ merge survivor, and \code{plasticdb_release_changed} when the release changed
 while a list was being paged.
 }
 \examples{
-res <- tryCatch(
-    stop(structure(class = c("plasticdb_not_found", "plasticdb_error",
-        "error", "condition"), list(message = "404 Not Found", call = NULL))),
-    plasticdb_not_found = function(e) "no such record"
-)
+## An unknown filter is refused before any request is sent:
+res <- tryCatch(proteins_list(no_such_filter = 1),
+    plasticdb_argument_error = function(e) conditionMessage(e))
+cat(res)
 res
 }

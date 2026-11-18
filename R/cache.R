@@ -9,7 +9,8 @@
 
 CACHE_FORMAT <- 1L
 KEPT_HEADERS <- c("x-plasticdb-release", "x-plasticdb-release-source",
-    "x-plasticdb-snapshot-unavailable", "content-type", "content-disposition", "link")
+    "x-plasticdb-snapshot-unavailable", "content-type",
+    "content-disposition", "link")
 
 pdb_bfc <- function(client) {
     dir <- client$cache_dir
@@ -119,7 +120,7 @@ cache_get_file <- function(client, release, key) {
 }
 
 cache_put_file <- function(client, release, key, source, status, headers,
-                           url, sha256) {
+                            url, sha256) {
     tryCatch({
         bfc <- pdb_bfc(client)
         ext <- tools::file_ext(source)

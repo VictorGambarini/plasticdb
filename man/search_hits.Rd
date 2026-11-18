@@ -41,8 +41,8 @@ box shows them.
 }
 }
 \examples{
-\dontrun{
-search_hits("cutinase", limit = 20)
-search_grouped("PETase")$groups
+search_hits("cutinase", limit = 5)[, c("entity_type", "route_key", "name")]
+\donttest{
+search_grouped("PETase", limit = 1)$groups
 }
 }

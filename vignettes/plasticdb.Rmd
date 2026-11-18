@@ -3,12 +3,12 @@ title: "Quick start: PlasticDB from R"
 author: "Victor Gambarini"
 date: "`r Sys.Date()`"
 output:
-  BiocStyle::html_document:
-    toc: true
+    BiocStyle::html_document:
+        toc: true
 vignette: >
-  %\VignetteIndexEntry{Quick start: PlasticDB from R}
-  %\VignetteEngine{knitr::rmarkdown}
-  %\VignetteEncoding{UTF-8}
+    %\VignetteIndexEntry{Quick start: PlasticDB from R}
+    %\VignetteEngine{knitr::rmarkdown}
+    %\VignetteEncoding{UTF-8}
 ---
 
 ```{r setup, include = FALSE}
@@ -43,12 +43,12 @@ the **observations** each measured. The `r BiocStyle::Biocpkg("plasticdb")`
 package reads it from R:
 
 * catalogue tables (proteins, microorganisms, plastics, papers, evidence) as
-  tibbles, one flat row per record;
+    tibbles, one flat row per record;
 * protein sequences as `r BiocStyle::Biocpkg("Biostrings")` `AAStringSet`
-  objects, named by accession, with the record's columns in `mcols()`;
+    objects, named by accession, with the record's columns in `mcols()`;
 * files (tables, FASTA, the whole dataset, a release's archived reference
-  databases) on disk, with pinned and release files cached by
-  `r BiocStyle::Biocpkg("BiocFileCache")`.
+    databases) on disk, with pinned and release files cached by
+    `r BiocStyle::Biocpkg("BiocFileCache")`.
 
 Reads need no account. The data is licensed CC BY 4.0: see
 [Citing the data](#citing-the-data).

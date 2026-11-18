@@ -42,17 +42,18 @@ follows them.
 }
 \details{
 Each setting is resolved, first match wins, from the argument, then the R
-option, then the environment variable, then the default:\tabular{llll}{
-   Argument \tab Option \tab Environment variable \tab Default \cr
-   \code{api_key} \tab  \tab \code{PLASTICDB_API_KEY} \tab none (reads are anonymous) \cr
-   \code{release} \tab \code{plasticdb.release} \tab \code{PLASTICDB_RELEASE} \tab none (live database) \cr
-   \code{base_url} \tab \code{plasticdb.base_url} \tab \code{PLASTICDB_BASE_URL} \tab \verb{https://v2.plasticdb.org/api/v1} \cr
-   \code{cache} \tab \code{plasticdb.cache} \tab \code{PLASTICDB_CACHE_DIR} \tab \code{TRUE} \cr
-   \code{timeout} \tab \code{plasticdb.timeout} \tab  \tab 30 seconds \cr
-   \code{max_retries} \tab \code{plasticdb.max_retries} \tab  \tab 3 \cr
-   \code{max_retry_wait} \tab \code{plasticdb.max_retry_wait} \tab  \tab 60 seconds \cr
+option, then the environment variable, then the default:
+\itemize{
+\item \code{api_key}: \code{PLASTICDB_API_KEY}; default none (reads are anonymous).
+\item \code{release}: option \code{plasticdb.release}, \code{PLASTICDB_RELEASE}; default
+none (the live database).
+\item \code{base_url}: option \code{plasticdb.base_url}, \code{PLASTICDB_BASE_URL}; default
+\verb{https://v2.plasticdb.org/api/v1}.
+\item \code{cache}: option \code{plasticdb.cache}, \code{PLASTICDB_CACHE_DIR}; default \code{TRUE}.
+\item \code{timeout}, \code{max_retries}, \code{max_retry_wait}: options
+\code{plasticdb.timeout}, \code{plasticdb.max_retries}, \code{plasticdb.max_retry_wait};
+defaults 30 seconds, 3 and 60 seconds.
 }
-
 
 A pinned client sends \verb{?release=} on every read; the server answers from
 that release's snapshot. Answers from a past release are immutable, so they

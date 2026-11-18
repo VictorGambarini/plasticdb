@@ -21,9 +21,9 @@
 #' @return A tibble with provenance, or (`search_grouped()`) a list.
 #' @name search_hits
 #' @examples
-#' \dontrun{
-#' search_hits("cutinase", limit = 20)
-#' search_grouped("PETase")$groups
+#' search_hits("cutinase", limit = 5)[, c("entity_type", "route_key", "name")]
+#' \donttest{
+#' search_grouped("PETase", limit = 1)$groups
 #' }
 NULL
 
@@ -88,10 +88,10 @@ search_autocomplete <- function(q, client = plasticdb_client()) {
 #'   graph) a list of two tibbles.
 #' @name pathways
 #' @examples
-#' \dontrun{
-#' pathways_list()
 #' g <- pathways_graph(16)
-#' g$edges
+#' g$edges[, c("source", "target", "label")]
+#' \donttest{
+#' pathways_list()
 #' }
 NULL
 
@@ -119,7 +119,7 @@ pathways_for_plastic <- function(plastic_id, client = plasticdb_client()) {
 #' @rdname pathways
 #' @export
 pathways_graph <- function(plastic_id, pathway_id = NULL,
-                           client = plasticdb_client()) {
+                            client = plasticdb_client()) {
     result <- pdb_request(client, ENDPOINTS$pathways_graph,
         list(pathway_id = pathway_id), list(plastic_id = plastic_id))
     data <- result$data %||% list()
@@ -154,8 +154,8 @@ pathways_graph <- function(plastic_id, pathway_id = NULL,
 #' @return A `plasticdb_record` list, or a named list of tibbles.
 #' @name stats_summary
 #' @examples
-#' \dontrun{
 #' stats_summary()$proteins
+#' \donttest{
 #' stats_by_country()$microorganisms
 #' }
 NULL
@@ -163,8 +163,8 @@ NULL
 #' @rdname stats_summary
 #' @export
 stats_summary <- function(evidence_scope = c("organism_or_enzyme",
-                              "whole_organism"),
-                          client = plasticdb_client()) {
+                                "whole_organism"),
+                            client = plasticdb_client()) {
     get_record(client, ENDPOINTS$stats,
         list(evidence_scope = match.arg(evidence_scope)))
 }
@@ -178,8 +178,8 @@ stats_protein_activity <- function(client = plasticdb_client()) {
 #' @rdname stats_summary
 #' @export
 stats_charts <- function(evidence_scope = c("organism_or_enzyme",
-                             "whole_organism"),
-                         client = plasticdb_client()) {
+                                "whole_organism"),
+                            client = plasticdb_client()) {
     result <- pdb_request(client, ENDPOINTS$stats_charts,
         list(evidence_scope = match.arg(evidence_scope)))
     with_provenance(tables_of(result$data), client, result)
@@ -220,11 +220,9 @@ tables_of <- function(data) {
 #' @return A tibble; its provenance also carries `since` and `as_of`.
 #' @export
 #' @examples
-#' \dontrun{
-#' feed <- changes(since = Sys.Date() - 7)
+#' feed <- changes(since = Sys.Date() - 7, limit = 10)
 #' table(feed$status)
 #' provenance(feed)$as_of
-#' }
 changes <- function(since, entity_type = NULL, limit = Inf,
                     client = plasticdb_client()) {
     if (!is.null(entity_type)) {

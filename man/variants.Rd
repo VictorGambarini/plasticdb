@@ -68,9 +68,9 @@ record and structure coordinates.
 }
 }
 \examples{
-\dontrun{
-variants_of("PBFCTW")
+variants_of("PBFCTW", limit = 3)[, c("accession", "variant_name")]
+\donttest{
 variants_get("PBDTZX")$variant_name
-variants_sequences(plastic = "PET", limit = 20)
+variants_sequences(plastic = "PET", limit = 5)
 }
 }

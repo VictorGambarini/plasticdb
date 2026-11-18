@@ -73,9 +73,9 @@ for one taxon (a renamed taxon is followed). These three are live only.
 }
 }
 \examples{
-\dontrun{
-microorganisms_list(genus = "Pseudomonas", plastic = "PET")
+microorganisms_list(genus = "Pseudomonas", plastic = "PET", limit = 3)
+\donttest{
 microorganisms_get(1547922)$name
-microorganisms_taxonomy("genus", "Ideonella")
+microorganisms_taxonomy("genus", "Ideonella")$paper_total
 }
 }

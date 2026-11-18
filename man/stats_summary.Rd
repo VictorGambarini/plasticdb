@@ -44,8 +44,8 @@ country; both as a named list of tibbles.
 }
 }
 \examples{
-\dontrun{
 stats_summary()$proteins
+\donttest{
 stats_by_country()$microorganisms
 }
 }

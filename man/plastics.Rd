@@ -36,9 +36,19 @@ plastics_names(client = plasticdb_client())
 
 \item{plastic_id}{A plastic's numeric id (16 is PET).}
 
-\item{microorganism_limit, microorganism_offset, microorganism_sort_by, microorganism_sort_order, microorganism_polarity}{The page of organisms embedded in the record.}
+\item{microorganism_limit, microorganism_offset}{The page of organisms
+embedded in the record.}
 
-\item{protein_limit, protein_offset, protein_sort_by, protein_sort_order, protein_polarity}{The page of proteins embedded in the record.}
+\item{microorganism_sort_by, microorganism_sort_order}{How it is sorted.}
+
+\item{microorganism_polarity}{Which outcome it lists.}
+
+\item{protein_limit, protein_offset}{The page of proteins embedded in the
+record.}
+
+\item{protein_sort_by, protein_sort_order}{How it is sorted.}
+
+\item{protein_polarity}{Which outcome it lists.}
 
 \item{evidence_scope}{\code{"organism_or_enzyme"} or \code{"whole_organism"}.}
 }
@@ -60,9 +70,9 @@ plastic use \code{microorganisms_list(plastic_id = )} or
 }
 }
 \examples{
-\dontrun{
-plastics_list(has_evidence = TRUE)
-pet <- plastics_get(16, protein_limit = 10)
-pet$name
+plastics_list(has_evidence = TRUE, limit = 5)[, c("id", "name")]
+\donttest{
+pet <- plastics_get(16, microorganism_limit = 2, protein_limit = 2)
+pet$full_name
 }
 }

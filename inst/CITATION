@@ -4,7 +4,7 @@ c(
     bibentry(
         bibtype = "Manual",
         header = "To cite the plasticdb R package:",
-        title = "plasticdb: Client for the PlasticDB Database of Plastic-Degrading Microorganisms and Proteins",
+        title = "plasticdb: Client for the PlasticDB Plastic Biodegradation Database",
         author = person("Victor", "Gambarini"),
         year = format(Sys.Date(), "%Y"),
         note = paste("R package version", pkgVersion),

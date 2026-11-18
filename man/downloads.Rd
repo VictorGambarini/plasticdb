@@ -133,9 +133,12 @@ the current one.
 }
 }
 \examples{
+path <- downloads_plastics(tempdir())
+head(utils::read.csv(path)[, c("id", "name")])
 \dontrun{
 downloads_proteins(tempdir(), format = "fasta", plastic = "PET")
 downloads_dataset(tempdir(), max_wait = 300)
+## Release artefacts (once the first dataset release is published):
 client <- plasticdb_client(release = "2026.50")
 downloads_artefacts(client = client)
 downloads_release_file("parquet/proteins.parquet", tempdir(),

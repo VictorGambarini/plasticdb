@@ -72,13 +72,14 @@ warn_merged <- function(old, new) {
 #' @seealso [variants_list()], [evidence_interactions()], [as_aastringset()]
 #' @name proteins
 #' @examples
-#' \dontrun{
-#' pet <- proteins_list(plastic = "PET", kind = "wild_type", limit = 50)
+#' pet <- proteins_list(plastic = "PET", kind = "wild_type", limit = 5)
 #' pet[, c("accession", "name", "source_microorganism.name")]
-#' petase <- proteins_get("PBFCTW")
+#' provenance(pet)$total
+#' \donttest{
+#' petase <- proteins_get("PBFCTW", view = "summary")
 #' petase$name
-#' proteins_interactions("PBFCTW", level = "observation")
-#' proteins_sequences(plastic = "PET", limit = 10)
+#' proteins_interactions("PBFCTW", level = "observation", limit = 3)
+#' proteins_sequences(plastic = "PHB", kind = "wild_type", min_year = 2025)
 #' }
 NULL
 
@@ -93,8 +94,8 @@ proteins_list <- function(..., limit = Inf, client = plasticdb_client()) {
 #' @rdname proteins
 #' @export
 proteins_get <- function(accession, view = c("full", "summary"),
-                         include_sequenceless = FALSE, follow_merges = FALSE,
-                         client = plasticdb_client()) {
+                            include_sequenceless = FALSE, follow_merges = FALSE,
+                            client = plasticdb_client()) {
     view <- match.arg(view)
     params <- list(view = view,
         include_sequenceless = if (isTRUE(include_sequenceless)) TRUE)
@@ -128,7 +129,7 @@ proteins_get <- function(accession, view = c("full", "summary"),
 }
 
 sub_list <- function(client, endpoint, accession, params = list(),
-                     limit = Inf, kind = NULL, level = "interaction") {
+                        limit = Inf, kind = NULL, level = "interaction") {
     list_tibble(client, endpoint, params, list(accession = accession),
         limit = limit, kind = kind, level = level)
 }
@@ -136,11 +137,11 @@ sub_list <- function(client, endpoint, accession, params = list(),
 #' @rdname proteins
 #' @export
 proteins_interactions <- function(accession,
-                                  kind = c("all", "direct", "indirect"),
-                                  level = c("interaction", "experiment",
-                                      "observation"),
-                                  include_sequenceless = FALSE, limit = Inf,
-                                  client = plasticdb_client()) {
+                                    kind = c("all", "direct", "indirect"),
+                                    level = c("interaction", "experiment",
+                                        "observation"),
+                                    include_sequenceless = FALSE, limit = Inf,
+                                    client = plasticdb_client()) {
     kind <- match.arg(kind)
     level <- match.arg(level)
     sub_list(client, ENDPOINTS$proteins_interactions, accession,
@@ -152,7 +153,7 @@ proteins_interactions <- function(accession,
 #' @rdname proteins
 #' @export
 proteins_kinetics <- function(accession, limit = Inf,
-                              client = plasticdb_client()) {
+                                client = plasticdb_client()) {
     sub_list(client, ENDPOINTS$proteins_kinetics, accession, limit = limit)
 }
 
@@ -166,7 +167,7 @@ proteins_properties <- function(accession, limit = Inf,
 #' @rdname proteins
 #' @export
 proteins_variants <- function(accession, include_sequenceless = FALSE,
-                              limit = Inf, client = plasticdb_client()) {
+                                limit = Inf, client = plasticdb_client()) {
     sub_list(client, ENDPOINTS$proteins_variants, accession,
         list(include_sequenceless = if (isTRUE(include_sequenceless)) TRUE),
         limit = limit, kind = "variant")
@@ -241,10 +242,10 @@ structure_text <- function(client, endpoint, ref, path) {
 #'   lists, an [Biostrings::AAStringSet], or text.
 #' @name variants
 #' @examples
-#' \dontrun{
-#' variants_of("PBFCTW")
+#' variants_of("PBFCTW", limit = 3)[, c("accession", "variant_name")]
+#' \donttest{
 #' variants_get("PBDTZX")$variant_name
-#' variants_sequences(plastic = "PET", limit = 20)
+#' variants_sequences(plastic = "PET", limit = 5)
 #' }
 NULL
 
@@ -260,7 +261,8 @@ variants_list <- function(..., limit = Inf, client = plasticdb_client()) {
 #' @rdname variants
 #' @export
 variants_get <- function(ref, include_sequenceless = FALSE,
-                         follow_merges = FALSE, client = plasticdb_client()) {
+                            follow_merges = FALSE,
+                                client = plasticdb_client()) {
     params <- list(include_sequenceless =
         if (isTRUE(include_sequenceless)) TRUE)
     current <- ref

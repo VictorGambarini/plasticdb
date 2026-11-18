@@ -20,7 +20,8 @@ resolve_target <- function(dest, headers, default) {
 
 place_file <- function(source, target) {
     dir.create(dirname(target), recursive = TRUE, showWarnings = FALSE)
-    tmp <- tempfile(paste0(".", basename(target), "."), tmpdir = dirname(target))
+    tmp <- tempfile(paste0(".", basename(target), "."),
+        tmpdir = dirname(target))
     on.exit(if (file.exists(tmp)) unlink(tmp), add = TRUE)
     if (!file.copy(source, tmp, overwrite = TRUE)) {
         stop("Could not write ", target, call. = FALSE)
@@ -36,8 +37,9 @@ place_file <- function(source, target) {
 # it is moved into place. A pinned snapshot answer (or any answer for
 # `immutable_release`, a release-scoped artefact) is kept in the cache.
 pdb_download <- function(client, endpoint, dest, params = list(),
-                         path_params = list(), sha256 = NULL,
-                         immutable_release = NULL, default_name = "download") {
+                            path_params = list(), sha256 = NULL,
+                            immutable_release = NULL,
+                                default_name = "download") {
     client <- check_client(client)
     prep <- prepare_request(client, endpoint, params, path_params)
     expected <- if (is.null(sha256)) NULL else tolower(sha256)
@@ -45,15 +47,9 @@ pdb_download <- function(client, endpoint, dest, params = list(),
     key <- if (!is.null(client$cache_dir) && !is.null(cache_release))
         cache_key_for(prep$method, prep$url)
     if (!is.null(key)) {
-        hit <- cache_get_file(client, cache_release, key)
-        if (!is.null(hit) && (is.null(expected) ||
-            identical(hit$sha256, expected))) {
-            target <- resolve_target(dest, hit$headers, default_name)
-            place_file(hit$path, target)
-            remember(client, decode_response(hit$status, hit$headers, raw(),
-                prep$url, from_cache = TRUE), endpoint)
-            return(target)
-        }
+        target <- from_file_cache(client, endpoint, prep, cache_release, key,
+            expected, dest, default_name)
+        if (!is.null(target)) return(target)
     }
 
     req <- build_httr2(client, prep$method, prep$url, follow_redirects = TRUE)
@@ -88,5 +84,20 @@ pdb_download <- function(client, endpoint, dest, params = list(),
                 headers, prep$url, actual)
         }
     }
+    target
+}
+
+# A verified cached copy placed at `dest`, or NULL when there is none.
+from_file_cache <- function(client, endpoint, prep, release, key, expected,
+                            dest, default_name) {
+    hit <- cache_get_file(client, release, key)
+    if (is.null(hit) || !(is.null(expected) ||
+        identical(hit$sha256, expected))) {
+        return(NULL)
+    }
+    target <- resolve_target(dest, hit$headers, default_name)
+    place_file(hit$path, target)
+    remember(client, decode_response(hit$status, hit$headers, raw(),
+        prep$url, from_cache = TRUE), endpoint)
     target
 }

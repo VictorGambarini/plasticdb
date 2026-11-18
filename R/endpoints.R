@@ -13,7 +13,7 @@
 # root:        resolve against the server root instead of /api/v1.
 
 ep <- function(method, path, pinnable = TRUE, live_only = FALSE,
-               in_contract = TRUE, raw_params = character(), root = FALSE) {
+                in_contract = TRUE, raw_params = character(), root = FALSE) {
     if (live_only && !pinnable) {
         stop(path, ": live_only implies pinnable", call. = FALSE)
     }

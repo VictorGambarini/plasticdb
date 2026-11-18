@@ -136,9 +136,8 @@ parse_retry_after <- function(value) {
         return(NULL)
     }
     value <- trimws(value)
-    seconds <- suppressWarnings(as.numeric(value))
-    if (!is.na(seconds)) {
-        return(max(seconds, 0))
+    if (grepl("^-?[0-9]+(\\.[0-9]+)?$", value)) {
+        return(max(as.numeric(value), 0))
     }
     lc <- Sys.getlocale("LC_TIME")
     on.exit(Sys.setlocale("LC_TIME", lc), add = TRUE)
@@ -266,11 +265,11 @@ announce <- function(client, result) {
     .state$announced <- TRUE
     if (!is.null(result$release)) {
         rlang::inform(c(
-            sprintf("PlasticDB: unpinned, answered by the live database (release %s).",
-                result$release),
+            sprintf(paste("PlasticDB: unpinned, answered by the live",
+                "database (release %s)."), result$release),
             i = sprintf(paste0("Set options(plasticdb.release = \"%s\") or ",
-                "plasticdb_client(release = \"%s\") to make results reproducible."),
-                result$release, result$release)),
+                "plasticdb_client(release = \"%s\") to make results ",
+                "reproducible."), result$release, result$release)),
             class = "plasticdb_unpinned")
     } else {
         rlang::inform(paste("PlasticDB: unpinned client; the server named no",

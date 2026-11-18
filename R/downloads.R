@@ -42,9 +42,12 @@
 #'   `downloads_manifest()`: a list).
 #' @name downloads
 #' @examples
+#' path <- downloads_plastics(tempdir())
+#' head(utils::read.csv(path)[, c("id", "name")])
 #' \dontrun{
 #' downloads_proteins(tempdir(), format = "fasta", plastic = "PET")
 #' downloads_dataset(tempdir(), max_wait = 300)
+#' ## Release artefacts (once the first dataset release is published):
 #' client <- plasticdb_client(release = "2026.50")
 #' downloads_artefacts(client = client)
 #' downloads_release_file("parquet/proteins.parquet", tempdir(),
@@ -65,7 +68,7 @@ download_table <- function(client, table, format, path, params) {
 #' @rdname downloads
 #' @export
 downloads_proteins <- function(path, format = c("csv", "json", "fasta"), ...,
-                               client = plasticdb_client()) {
+                                client = plasticdb_client()) {
     params <- check_filters(list(...), PROTEIN_FILTERS, "downloads_proteins")
     download_table(client, "proteins", match.arg(format), path, params)
 }
@@ -73,7 +76,7 @@ downloads_proteins <- function(path, format = c("csv", "json", "fasta"), ...,
 #' @rdname downloads
 #' @export
 downloads_microorganisms <- function(path, format = c("csv", "json"), ...,
-                                     client = plasticdb_client()) {
+                                        client = plasticdb_client()) {
     params <- check_filters(list(...), MICROORGANISM_FILTERS,
         "downloads_microorganisms")
     download_table(client, "microorganisms", match.arg(format), path, params)
@@ -82,7 +85,7 @@ downloads_microorganisms <- function(path, format = c("csv", "json"), ...,
 #' @rdname downloads
 #' @export
 downloads_plastics <- function(path, format = c("csv", "json"), ...,
-                               client = plasticdb_client()) {
+                                client = plasticdb_client()) {
     params <- check_filters(list(...), PLASTIC_FILTERS, "downloads_plastics")
     download_table(client, "plastics", match.arg(format), path, params)
 }
@@ -90,7 +93,7 @@ downloads_plastics <- function(path, format = c("csv", "json"), ...,
 #' @rdname downloads
 #' @export
 downloads_papers <- function(path, format = c("csv", "json"), ...,
-                             client = plasticdb_client()) {
+                                client = plasticdb_client()) {
     params <- check_filters(list(...), PAPER_FILTERS, "downloads_papers")
     download_table(client, "papers", match.arg(format), path, params)
 }
@@ -98,7 +101,7 @@ downloads_papers <- function(path, format = c("csv", "json"), ...,
 #' @rdname downloads
 #' @export
 downloads_protein_variants <- function(path, format = c("csv", "json"), ...,
-                                       client = plasticdb_client()) {
+                                        client = plasticdb_client()) {
     params <- check_filters(list(...), VARIANT_DOWNLOAD_FILTERS,
         "downloads_protein_variants")
     download_table(client, "protein-variants", match.arg(format), path, params)
@@ -107,7 +110,7 @@ downloads_protein_variants <- function(path, format = c("csv", "json"), ...,
 #' @rdname downloads
 #' @export
 downloads_dataset <- function(path, format = c("zip", "json"), max_wait = 0,
-                              client = plasticdb_client()) {
+                                client = plasticdb_client()) {
     format <- match.arg(format)
     endpoint <- ENDPOINTS[[paste0("dl_dataset_", format)]]
     deadline <- Sys.time() + max_wait
@@ -131,10 +134,11 @@ downloads_dataset <- function(path, format = c("zip", "json"), max_wait = 0,
 #' @rdname downloads
 #' @export
 downloads_search <- function(path, q, format = c("json", "zip"),
-                             client = plasticdb_client()) {
+                                client = plasticdb_client()) {
     format <- match.arg(format)
     pdb_download(client, ENDPOINTS[[paste0("dl_search_", format)]], path,
-        params = list(q = q), default_name = paste0("plasticdb_search.", format))
+        params = list(q = q),
+        default_name = paste0("plasticdb_search.", format))
 }
 
 release_version <- function(client, release) {
@@ -177,7 +181,7 @@ manifest_sha <- function(manifest, file) {
 #' @rdname downloads
 #' @export
 downloads_release_file <- function(file, path, release = NULL,
-                                   client = plasticdb_client()) {
+                                    client = plasticdb_client()) {
     version <- release_version(client, release)
     artefacts <- release_artefacts(client, version)
     if (identical(file, "MANIFEST.json")) {

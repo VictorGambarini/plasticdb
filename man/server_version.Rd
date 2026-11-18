@@ -16,7 +16,5 @@ A string, or \code{NULL} when the server cannot be reached.
 The server's application version
 }
 \examples{
-\dontrun{
 server_version()
-}
 }

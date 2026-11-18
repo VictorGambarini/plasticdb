@@ -27,9 +27,7 @@ row has \code{entity_type}, \code{id}, \code{accession}, \code{status} (\code{"u
 \code{provenance(feed)$as_of} and pass it as the next \code{since}.
 }
 \examples{
-\dontrun{
-feed <- changes(since = Sys.Date() - 7)
+feed <- changes(since = Sys.Date() - 7, limit = 10)
 table(feed$status)
 provenance(feed)$as_of
-}
 }

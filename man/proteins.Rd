@@ -138,13 +138,14 @@ become list columns, and per-plastic evidence becomes \code{plastics_positive},
 \code{plastics_negative} and \code{plastics_inconclusive}.
 }
 \examples{
-\dontrun{
-pet <- proteins_list(plastic = "PET", kind = "wild_type", limit = 50)
+pet <- proteins_list(plastic = "PET", kind = "wild_type", limit = 5)
 pet[, c("accession", "name", "source_microorganism.name")]
-petase <- proteins_get("PBFCTW")
+provenance(pet)$total
+\donttest{
+petase <- proteins_get("PBFCTW", view = "summary")
 petase$name
-proteins_interactions("PBFCTW", level = "observation")
-proteins_sequences(plastic = "PET", limit = 10)
+proteins_interactions("PBFCTW", level = "observation", limit = 3)
+proteins_sequences(plastic = "PHB", kind = "wild_type", min_year = 2025)
 }
 }
 \seealso{

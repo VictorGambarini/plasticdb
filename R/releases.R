@@ -18,10 +18,9 @@
 #' @return A `plasticdb_record` list, or (`releases_list()`) a tibble.
 #' @name releases
 #' @examples
-#' \dontrun{
-#' releases_current()$version
-#' releases_list()
-#' }
+#' current <- releases_current()
+#' current$version  # NULL before the first release
+#' current$license
 NULL
 
 #' @rdname releases

@@ -86,7 +86,7 @@ list_tibble <- function(client, endpoint, params = list(),
 
 # A record endpoint as a list with provenance attached.
 get_record <- function(client, endpoint, params = list(),
-                       path_params = list(), ...) {
+                        path_params = list(), ...) {
     result <- pdb_request(client, endpoint, params, path_params, ...)
     as_record(result$data, client, result)
 }

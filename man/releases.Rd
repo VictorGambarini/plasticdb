@@ -43,8 +43,7 @@ signals \code{plasticdb_release_unknown} (also a \code{plasticdb_not_found}).
 }
 }
 \examples{
-\dontrun{
-releases_current()$version
-releases_list()
-}
+current <- releases_current()
+current$version  # NULL before the first release
+current$license
 }

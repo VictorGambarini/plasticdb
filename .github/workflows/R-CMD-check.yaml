@@ -68,6 +68,8 @@ jobs:
       - name: R CMD check (Bioconductor devel)
         run: R CMD check --no-manual plasticdb_*.tar.gz
 
+      # no-check-bioc-help skips the support-site / mailing-list registration
+      # checks: they are about the maintainer's accounts, not the code.
       - name: BiocCheck
         run: |
-          Rscript -e 'BiocCheck::BiocCheck(list.files(pattern = "^plasticdb_.*[.]tar[.]gz$"), `quit-with-status` = TRUE, `new-package` = TRUE)'
+          Rscript -e 'BiocCheck::BiocCheck(list.files(pattern = "^plasticdb_.*[.]tar[.]gz$"), `quit-with-status` = TRUE, `new-package` = TRUE, `no-check-bioc-help` = TRUE)'

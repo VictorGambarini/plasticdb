@@ -8,34 +8,40 @@
 #' `plasticdb_not_found`, and a merged record is a `plasticdb_merged` and a
 #' `plasticdb_gone`.
 #'
-#' | Class | Raised when | Extra fields |
-#' |---|---|---|
-#' | `plasticdb_error` | any of the below | `status`, `detail`, `response_body`, `url` |
-#' | `plasticdb_connection_error` | the server could not be reached | |
-#' | `plasticdb_timeout` | a request timed out (also a connection error) | |
-#' | `plasticdb_unexpected_response` | an answer this package does not understand | |
-#' | `plasticdb_bad_request` | 400 | |
-#' | `plasticdb_authentication` | 401: no, invalid or expired API key | |
-#' | `plasticdb_permission_denied` | 403 | |
-#' | `plasticdb_not_found` | 404 | |
-#' | `plasticdb_gone` | 410: the record was withdrawn | |
-#' | `plasticdb_merged` | the accession was merged (also `plasticdb_gone`) | `merged_into`, `location`, `kind` |
-#' | `plasticdb_engineered_variant` | a protein call given a variant's accession | `accession`, `location` |
-#' | `plasticdb_conflict` | 409 | |
-#' | `plasticdb_payload_too_large` | 413 | |
-#' | `plasticdb_validation` | 422: a parameter was invalid | `errors` |
-#' | `plasticdb_rate_limit` | 429 beyond the retry budget | `retry_after` |
-#' | `plasticdb_server_error` | 5xx | |
-#' | `plasticdb_service_unavailable` | 503 (also a server error) | `retry_after` |
-#' | `plasticdb_checksum` | a download did not match its published SHA-256 | `expected`, `actual` |
-#' | `plasticdb_release_error` | a problem with the requested release | `release`, `current_release`, `reason` |
-#' | `plasticdb_release_not_available` | the release cannot answer at all | |
-#' | `plasticdb_release_unknown` | 404 `unknown` (also not found) | |
-#' | `plasticdb_release_no_artefacts` | 404 `no_artefacts` (also not found) | |
-#' | `plasticdb_release_not_mounted` | 503 `not_mounted` (also service unavailable) | |
-#' | `plasticdb_release_unsupported` | the release cannot answer this call | |
-#' | `plasticdb_release_live_only` | 409 `live_only`: the endpoint is live only (also a conflict) | |
-#' | `plasticdb_release_unsupported_filter` | 422 `release_unsupported` (also validation) | `parameters` |
+#' Every condition has the fields `status` (the HTTP status), `detail` (the
+#' server's message), `response_body` and `url`. The classes, most general
+#' first (extra fields in brackets):
+#'
+#' * `plasticdb_error`: any of the below.
+#' * `plasticdb_connection_error`: the server could not be reached;
+#'   `plasticdb_timeout`: a request timed out (also a connection error).
+#' * `plasticdb_unexpected_response`: an answer this package does not
+#'   understand.
+#' * `plasticdb_bad_request` (400), `plasticdb_authentication` (401: no,
+#'   invalid or expired API key), `plasticdb_permission_denied` (403),
+#'   `plasticdb_not_found` (404), `plasticdb_conflict` (409),
+#'   `plasticdb_gone` (410: the record was withdrawn),
+#'   `plasticdb_payload_too_large` (413).
+#' * `plasticdb_merged`: the accession was merged; also `plasticdb_gone`
+#'   (`merged_into`, `location`, `kind`).
+#' * `plasticdb_engineered_variant`: a per-protein call given a variant's
+#'   accession (`accession`, `location`).
+#' * `plasticdb_validation` (422): a parameter was invalid (`errors`).
+#' * `plasticdb_rate_limit` (429) beyond the retry budget (`retry_after`).
+#' * `plasticdb_server_error` (5xx); `plasticdb_service_unavailable` (503,
+#'   also a server error; `retry_after`).
+#' * `plasticdb_checksum`: a download did not match its published SHA-256
+#'   (`expected`, `actual`).
+#' * `plasticdb_release_error`: a problem with the requested release
+#'   (`release`, `current_release`, `reason`). Its subclasses:
+#'   `plasticdb_release_not_available`, the release cannot answer at all,
+#'   with `plasticdb_release_unknown` (404 `unknown`, also not found),
+#'   `plasticdb_release_no_artefacts` (404 `no_artefacts`, also not found)
+#'   and `plasticdb_release_not_mounted` (503 `not_mounted`, also service
+#'   unavailable); and `plasticdb_release_unsupported`, the release cannot
+#'   answer this call, with `plasticdb_release_live_only` (409 `live_only`,
+#'   also a conflict) and `plasticdb_release_unsupported_filter` (422
+#'   `release_unsupported`, also validation; `parameters`).
 #'
 #' A function given an argument it does not take (an unknown filter, say)
 #' signals `plasticdb_argument_error` before anything is sent.
@@ -44,14 +50,14 @@
 #' merge survivor, and `plasticdb_release_changed` when the release changed
 #' while a list was being paged.
 #'
+#' @return Not a function: this page documents the condition classes.
 #' @name plasticdb-conditions
 #' @aliases plasticdb_error
 #' @examples
-#' res <- tryCatch(
-#'     stop(structure(class = c("plasticdb_not_found", "plasticdb_error",
-#'         "error", "condition"), list(message = "404 Not Found", call = NULL))),
-#'     plasticdb_not_found = function(e) "no such record"
-#' )
+#' ## An unknown filter is refused before any request is sent:
+#' res <- tryCatch(proteins_list(no_such_filter = 1),
+#'     plasticdb_argument_error = function(e) conditionMessage(e))
+#' cat(res)
 #' res
 NULL
 
@@ -184,18 +190,7 @@ abort_from_response <- function(resp, call = NULL) {
 
     if (status %in% c(301L, 308L) && is.list(body) &&
         is.character(body$accession)) {
-        target <- body$accession
-        location <- body$location
-        if (is.null(location)) location <- resp$headers[["location"]]
-        if (identical(body$kind, "engineered") &&
-            toupper(requested_protein(resp$url)) == toupper(target)) {
-            abort_with("engineered_variant", sprintf(
-                "%s is an engineered variant: use variants_get(\"%s\").",
-                target, target), accession = target, location = location)
-        }
-        abort_with("merged",
-            sprintf("This accession was merged into %s.", target),
-            merged_into = target, location = location, kind = body$kind)
+        abort_merged(resp, body, abort_with)
     }
 
     reason <- if (is.list(body) && !is.null(names(body))) body$reason
@@ -248,3 +243,18 @@ abort_from_response <- function(resp, call = NULL) {
 }
 
 `%||%` <- function(x, y) if (is.null(x)) y else x
+
+# A merge redirect: the accession was merged, or it names a variant.
+abort_merged <- function(resp, body, abort_with) {
+    target <- body$accession
+    location <- body$location %||% resp$headers[["location"]]
+    if (identical(body$kind, "engineered") &&
+        toupper(requested_protein(resp$url)) == toupper(target)) {
+        abort_with("engineered_variant", sprintf(
+            "%s is an engineered variant: use variants_get(\"%s\").",
+            target, target), accession = target, location = location)
+    }
+    abort_with("merged",
+        sprintf("This accession was merged into %s.", target),
+        merged_into = target, location = location, kind = body$kind)
+}

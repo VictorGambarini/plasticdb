@@ -56,8 +56,9 @@ to a file and returns the path.
 }
 }
 \examples{
-\dontrun{
-papers_list(protein = "PBFCTW", min_year = 2020)
+papers_list(protein = "PBFCTW", min_year = 2024, limit = 3)[, c("year",
+    "title")]
+\donttest{
 papers_get(1262)$title
 cat(papers_export(1262))
 }

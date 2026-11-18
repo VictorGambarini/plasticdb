@@ -46,9 +46,9 @@ attributes, flattened), ready for
 }
 }
 \examples{
-\dontrun{
-pathways_list()
 g <- pathways_graph(16)
-g$edges
+g$edges[, c("source", "target", "label")]
+\donttest{
+pathways_list()
 }
 }
