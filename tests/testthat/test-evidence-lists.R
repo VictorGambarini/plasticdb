@@ -190,3 +190,18 @@ test_that("proteins_fasta() is pinnable (server 2.87.1)", {
     expect_match(proteins_fasta("PB0001", client = client), "^>PB0001")
     expect_identical(query_of(calls$urls[[1]])$release, "2026.30")
 })
+
+test_that("the evidence lists parse the live server's records (2.89.0)", {
+    local_clean_env()
+    httptest2::with_mock_api({
+        i <- interactions_list(plastic = "PET", protein = "PBFCTW", limit = 2)
+        e <- experiments_list(limit = 2)
+        o <- observations_list(limit = 2)
+        one <- interactions_get(1)
+    })
+    expect_s3_class(i, "tbl_df")
+    expect_true(all(c("id", "actor_type") %in% names(i)))
+    expect_true(all(c("id", "interaction_id") %in% names(e)))
+    expect_true("experiment_id" %in% names(o))
+    expect_identical(one$id, 1L)
+})

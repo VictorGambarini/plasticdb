@@ -48,5 +48,5 @@ structure(list(method = "GET", url = "pdb/papers/1262/export?format=bibtex",
     0x3d, 0x20, 0x7b, 0x50, 0x6c, 0x61, 0x73, 0x74, 0x69, 0x63, 
     0x44, 0x42, 0x20, 0x70, 0x61, 0x70, 0x65, 0x72, 0x20, 0x31, 
     0x32, 0x36, 0x32, 0x7d, 0x0a, 0x7d, 0x0a)), timing = c(redirect = 0, 
-    namelookup = 3.8e-05, connect = 3.8e-05, pretransfer = 0.000159, 
-    starttransfer = 0.021644, total = 0.021722), cache = new.env(parent = emptyenv())), class = "httr2_response")
+    namelookup = 3.7e-05, connect = 3.7e-05, pretransfer = 0.000156, 
+    starttransfer = 0.024332, total = 0.024398), cache = new.env(parent = emptyenv())), class = "httr2_response")

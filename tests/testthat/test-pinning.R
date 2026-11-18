@@ -101,7 +101,7 @@ test_that("provenance() of the client names the release and versions", {
     expect_identical(prov$data_license, "CC BY 4.0")
     expect_identical(prov$sdk_version,
         as.character(utils::packageVersion("plasticdb")))
-    expect_identical(prov$server_version, "2.87.0")
+    expect_identical(prov$server_version, "2.89.0")
     expect_error(provenance(list()), class = "plasticdb_argument_error")
 })
 

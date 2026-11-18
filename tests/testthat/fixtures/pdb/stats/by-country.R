@@ -5,6 +5,6 @@ structure(list(method = "GET", url = "pdb/stats/by-country",
         vary = "Accept-Encoding", `x-plasticdb-release-source` = "live", 
         `content-length` = "1745"), class = "httr2_headers"), 
     body = charToRaw("{\"microorganisms\":[{\"country\":\"China\",\"count\":791},{\"country\":\"South Korea\",\"count\":225},{\"country\":\"Japan\",\"count\":168}],\"proteins\":[{\"country\":\"China\",\"count\":143},{\"country\":\"Japan\",\"count\":85},{\"country\":\"Slovakia\",\"count\":66}],\"plastics\":[{\"country\":\"South Korea\",\"count\":27},{\"country\":\"China\",\"count\":25},{\"country\":\"Japan\",\"count\":21}],\"papers\":[{\"country\":\"China\",\"count\":319},{\"country\":\"Japan\",\"count\":187},{\"country\":\"Germany\",\"count\":141}]}"), 
-    timing = c(redirect = 0, namelookup = 3.6e-05, connect = 3.7e-05, 
-    pretransfer = 0.000151, starttransfer = 0.107103, total = 0.107232
+    timing = c(redirect = 0, namelookup = 3.8e-05, connect = 3.8e-05, 
+    pretransfer = 0.000146, starttransfer = 0.089833, total = 0.09004
     ), cache = new.env(parent = emptyenv())), class = "httr2_response")
