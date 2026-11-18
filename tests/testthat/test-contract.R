@@ -157,3 +157,32 @@ test_that("only /health is outside the contract", {
     outside <- Filter(function(e) !e$in_contract, endpoints)
     expect_identical(vapply(outside, `[[`, "", "path"), c(health = "/health"))
 })
+
+test_that("build_tree() is keyed: the contract has no anonymous option", {
+    security <- operation(endpoints$tree_build)$security
+    expect_gt(length(security), 0)
+    expect_false(any(vapply(security, function(s) !length(s), TRUE)))
+})
+
+test_that("the evidence list filters are the contract's query parameters", {
+    lists <- list(interactions = plasticdb:::INTERACTION_FILTERS,
+        experiments = plasticdb:::EXPERIMENT_FILTERS,
+        observations = plasticdb:::OBSERVATION_FILTERS)
+    for (name in names(lists)) {
+        e <- endpoints[[paste0(name, "_list")]]
+        expect_setequal(setdiff(param_names(e), c("limit", "offset", "page",
+            "release")), lists[[name]])
+    }
+    expect_true("include_sequence" %in% param_names(endpoints$proteins_list))
+    expect_setequal(c(plasticdb:::PROTEIN_LIST_FILTERS,
+        c("limit", "offset", "page", "release")),
+        param_names(endpoints$proteins_list))
+})
+
+test_that("kind is the deprecated alias of evidence_level", {
+    params <- operation(endpoints$proteins_interactions)$parameters
+    kind <- Filter(function(p) identical(p$name, "kind"), params)[[1]]
+    expect_true(isTRUE(kind$deprecated))
+    expect_true("evidence_level" %in% param_names(
+        endpoints$proteins_interactions))
+})

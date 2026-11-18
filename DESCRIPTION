@@ -1,7 +1,7 @@
 Package: plasticdb
 Type: Package
 Title: Client for the PlasticDB Plastic Biodegradation Database
-Version: 0.99.1
+Version: 0.99.2
 Authors@R:
     person("Victor", "Gambarini", role = c("aut", "cre"),
            email = "victor.gambarini@gmail.com")

@@ -98,7 +98,7 @@ prov[c("release", "release_source", "pinned", "total")]
 One record keeps the API's nesting:
 
 ```{r petase}
-petase <- proteins_get("PBFCTW", view = "summary")
+petase <- proteins_get("PBFCTW")
 petase$name
 nchar(petase$sequence)
 petase$source_microorganism$name

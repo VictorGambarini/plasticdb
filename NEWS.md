@@ -1,3 +1,41 @@
+# plasticdb 0.99.2
+
+Adapted to server 2.87.1, 2.88.0 and 2.89.0 (the contract is re-vendored).
+
+* **Behaviour change:** `proteins_get()` now asks for `view = "summary"` by
+  default (the server's own default since 2.89.0, which the package used to
+  override with `"full"`). A summary carries the record's fields and
+  `counts` instead of the embedded `interactions`, `indirect_interactions`,
+  `variants`, `kinetics` and `properties` lists; pass `view = "full"` for
+  those, or read them as tibbles with `proteins_interactions()`,
+  `proteins_variants()`, `proteins_kinetics()` and `proteins_properties()`.
+  `as_aastringset()` works on either shape.
+* `proteins_interactions()` and `evidence_interactions()` take
+  `evidence_level` (`"all"`, `"direct"`, `"indirect"`) in place of `kind`,
+  as the server and the new evidence lists name it. `kind` still works
+  but is deprecated (a `plasticdb_deprecated` warning, once per session);
+  only `evidence_level` is ever sent, and different values in both signal
+  `plasticdb_argument_error`. Code that passed the level by position is
+  unaffected.
+* New top-level evidence lists, flat tibbles of the spine as the release
+  tables have it: `interactions_list()`, `experiments_list()` and
+  `observations_list()`, with `interactions_get()`, `experiments_get()` and
+  `observations_get()` by id. Filters: `plastic`, `include_subtypes`,
+  `plastic_id`, `microorganism`, `protein`, `evidence_level`, `paper_id`,
+  `doi`, `polarity`, `evidence_method`, `substrate_form`,
+  `measurement_type`, `has_quantitative`; experiments add `interaction_id`,
+  observations `interaction_id` and `experiment_id`. All are pinnable.
+* `proteins_list(include_sequence = TRUE)` (also `variants_list()`) adds a
+  `sequence` column. `proteins_sequences()` and `variants_sequences()` use
+  it, live and pinned, so they no longer download the FASTA file as well
+  (they still fall back to it when the server does not return sequences).
+  Each record's metadata no longer carries a `sequence` column in `mcols()`.
+* `proteins_fasta()` answers a pinned release (server 2.87.1; it used to be
+  live only).
+* `build_tree()` needs an API key on the server since 2.88.0, as the
+  package already required; the contract test now checks the contract has no
+  anonymous option for it.
+
 # plasticdb 0.99.1
 
 * Jobs (R3), mirroring the Python client: `submit_job()` and the typed

@@ -6,9 +6,12 @@
 #' for the few records without one, as in the server's FASTA files); every
 #' other column goes into `mcols()`. Records without a sequence are dropped.
 #'
-#' Protein list items carry no sequence, so [proteins_sequences()] and
-#' [variants_sequences()] list the records and fetch the FASTA with the same
-#' filters instead.
+#' Protein lists carry no sequence unless asked
+#' (`proteins_list(include_sequence = TRUE)` adds a `sequence` column, which
+#' `as_aastringset()` accepts). [proteins_sequences()] and
+#' [variants_sequences()] ask for it, live or pinned, so they need one list
+#' call; against a server that does not return it they fall back to the FASTA
+#' download with the same filters.
 #'
 #' @param x A tibble with a `sequence` column, or a record list from
 #'   [proteins_get()] or [variants_get()].
@@ -37,7 +40,7 @@ as_aastringset <- function(x, ...) {
     }
     if (!is.data.frame(x) || !"sequence" %in% names(x)) {
         arg_error(paste("`x` has no `sequence` column. Protein lists carry",
-            "none: use proteins_sequences() instead."))
+            "unless include_sequence = TRUE: use proteins_sequences()."))
     }
     keep <- !is.na(x$sequence) & nzchar(x$sequence)
     x <- x[keep, , drop = FALSE]
@@ -85,25 +88,35 @@ body_text <- function(data) {
     if (is.null(data)) "" else as.character(data)
 }
 
-# Listed proteins with their sequences from /downloads/proteins.fasta.
+# Listed proteins with their sequences: the list's own `sequence` column
+# (include_sequence = TRUE, live or pinned), else /downloads/proteins.fasta.
 protein_sequences <- function(client, params, limit) {
+    params$include_sequence <- TRUE
     listed <- list_tibble(client, ENDPOINTS$proteins_list, params,
         limit = limit, kind = "protein")
     if (!nrow(listed)) {
         return(Biostrings::AAStringSet())
     }
-    fasta_params <- if (is.null(client$release))
-        params[intersect(names(params), PROTEIN_FILTERS)] else list()
-    result <- pdb_request(client, ENDPOINTS$dl_proteins_fasta, fasta_params)
-    fasta <- parse_fasta(body_text(result$data))
     ids <- seq_ids(listed, listed$kind %in% "engineered")
-    found <- match(ids, fasta$seq_id)
-    if (any(is.na(found))) {
-        rlang::inform(sprintf("PlasticDB: %d of %d records have no sequence.",
-            sum(is.na(found)), length(found)), class = "plasticdb_no_sequence")
+    if ("sequence" %in% names(listed)) {
+        sequences <- as.character(listed$sequence)
+        keep <- !is.na(sequences) & nzchar(sequences)
+        listed$sequence <- NULL
+    } else {
+        fasta_params <- if (is.null(client$release))
+            params[intersect(names(params), PROTEIN_FILTERS)] else list()
+        result <- pdb_request(client, ENDPOINTS$dl_proteins_fasta,
+            fasta_params)
+        fasta <- parse_fasta(body_text(result$data))
+        found <- match(ids, fasta$seq_id)
+        keep <- !is.na(found)
+        sequences <- fasta$sequence[found]
     }
-    keep <- !is.na(found)
-    out <- Biostrings::AAStringSet(stats::setNames(fasta$sequence[found[keep]],
+    if (!all(keep)) {
+        rlang::inform(sprintf("PlasticDB: %d of %d records have no sequence.",
+            sum(!keep), length(keep)), class = "plasticdb_no_sequence")
+    }
+    out <- Biostrings::AAStringSet(stats::setNames(sequences[keep],
         ids[keep]))
     S4Vectors::mcols(out) <- S4Vectors::DataFrame(listed[keep, ],
         check.names = FALSE)

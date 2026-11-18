@@ -1,4 +1,4 @@
-structure(list(method = "GET", url = "pdb/proteins/PBFCTW/interactions?kind=all&limit=3&offset=0", 
+structure(list(method = "GET", url = "pdb/proteins/PBFCTW/interactions?evidence_level=all&limit=3&offset=0", 
     status_code = 200L, headers = structure(list(`cache-control` = "public, no-cache", 
         `content-encoding` = "gzip", `content-type` = "application/json", 
         etag = "W/\"none-20882b1e8affba51696d98aa\"", link = "<https://creativecommons.org/licenses/by/4.0/>; rel=\"license\"", 

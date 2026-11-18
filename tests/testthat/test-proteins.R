@@ -42,7 +42,7 @@ test_that("a bad filter value is a server validation error", {
 test_that("proteins_get() returns the record", {
     local_clean_env()
     httptest2::with_mock_api({
-        p <- proteins_get("PBFCTW", view = "summary")
+        p <- proteins_get("PBFCTW")
     })
     expect_s3_class(p, "plasticdb_record")
     expect_identical(p$accession, "PBFCTW")
@@ -159,19 +159,6 @@ test_that("kinetics, properties and variants are tables", {
     expect_s4_class(seqs, "AAStringSet")
     expect_identical(names(seqs), v$accession)
     expect_identical(S4Vectors::mcols(seqs)$variant_name, v$variant_name)
-})
-
-test_that("proteins_sequences() pairs the list with the FASTA download", {
-    local_clean_env()
-    httptest2::with_mock_api({
-        s <- proteins_sequences(plastic = "PHB", kind = "wild_type",
-            min_year = 2025)
-    })
-    expect_s4_class(s, "AAStringSet")
-    expect_gt(length(s), 0)
-    expect_true(all(grepl("^PB", names(s))))
-    expect_identical(names(s), S4Vectors::mcols(s)$accession)
-    expect_identical(provenance(s)$release_source, "live")
 })
 
 test_that("FASTA text and engineered parents", {

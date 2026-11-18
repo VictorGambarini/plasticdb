@@ -65,7 +65,7 @@ try_call(releases_get("2026.99"))
 
 try_call(proteins_list(plastic = "PET", kind = "wild_type", limit = 3))
 try_call(proteins_list(sort_by = "nope", limit = 1))
-try_call(proteins_get("PBFCTW", view = "summary"))
+try_call(proteins_get("PBFCTW"))
 try_call(proteins_get("PBGQPC"))
 try_call(proteins_get("PBMW9H"))
 try_call(proteins_get("PBDTZX"))

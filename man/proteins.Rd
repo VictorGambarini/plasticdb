@@ -19,7 +19,7 @@ proteins_list(..., limit = Inf, client = plasticdb_client())
 
 proteins_get(
   accession,
-  view = c("full", "summary"),
+  view = c("summary", "full"),
   include_sequenceless = FALSE,
   follow_merges = FALSE,
   client = plasticdb_client()
@@ -27,10 +27,11 @@ proteins_get(
 
 proteins_interactions(
   accession,
-  kind = c("all", "direct", "indirect"),
+  evidence_level = c("all", "direct", "indirect"),
   level = c("interaction", "experiment", "observation"),
   include_sequenceless = FALSE,
   limit = Inf,
+  kind = NULL,
   client = plasticdb_client()
 )
 
@@ -68,18 +69,29 @@ proteins_engineered_parents(
 
 \item{accession, ref}{A protein accession or numeric id.}
 
-\item{view}{\code{"full"} or \code{"summary"} (leaves out the per-record evidence
-lists, much smaller for well-studied enzymes).}
+\item{view}{\code{"summary"} (the default, as on the server since 2.89.0) or
+\code{"full"}. The summary carries the record's own fields and \code{counts} (how
+many interactions, variants, kinetics and properties it has) but not
+those lists, and is much smaller for well-studied enzymes; \code{"full"}
+embeds \code{interactions}, \code{variants}, \code{kinetics} and \code{properties}. Use
+\code{\link[=proteins_interactions]{proteins_interactions()}}, \code{\link[=proteins_variants]{proteins_variants()}}, \code{\link[=proteins_kinetics]{proteins_kinetics()}}
+and \code{\link[=proteins_properties]{proteins_properties()}} to read the lists as tibbles.}
 
 \item{include_sequenceless}{Include records without a sequence.}
 
 \item{follow_merges}{Return the survivor of a merged accession.}
 
-\item{kind}{\code{"all"}, \code{"direct"} or \code{"indirect"} interactions.}
+\item{evidence_level}{\code{"all"} (the default), \code{"direct"} (assayed on the
+protein itself) or \code{"indirect"} (credited through its engineered
+variants) interactions.}
 
 \item{level}{One row per \code{"interaction"}, \code{"experiment"} or
 \code{"observation"}. Deeper levels repeat the interaction's columns and add
 \verb{experiment.*} (and \verb{observation.*}) columns.}
+
+\item{kind}{Deprecated: the old name of \code{evidence_level}. It is sent as
+\code{evidence_level}, never alongside it; different values in both signal
+\code{plasticdb_argument_error}.}
 
 \item{path}{For \code{proteins_structure()}, a file or directory to write to.}
 
@@ -103,7 +115,9 @@ types and variants; \verb{kind =} narrows). Like every entity list, only
 records with a positive result are listed unless \verb{polarity =} or
 \code{include_negative = TRUE} says otherwise.
 \item \code{proteins_get()} returns one protein by accession (\code{PB...}, any case)
-or numeric id. An engineered variant's accession returns the variant, as
+or numeric id, by default as the \code{"summary"} view (with \code{counts});
+\code{view = "full"} embeds its interactions, variants, kinetics and
+properties. An engineered variant's accession returns the variant, as
 \code{\link[=variants_get]{variants_get()}} does. A merged accession signals \code{plasticdb_merged}
 naming the survivor (\code{merged_into}); with \code{follow_merges = TRUE} the
 survivor is returned instead, with a \code{plasticdb_merged_warning}. A
@@ -125,10 +139,17 @@ variants; \code{proteins_variants()} its engineered variants, with sequences.
 record and primary structure (PDB text, or a file with \code{path});
 \code{proteins_lineage()} a wild type with every variant engineered from it;
 \code{proteins_engineered_parents()} the wild types that have variants. A
-variant's accession gives the variant's FASTA record or structure. These
-four are live only: a pinned client gets \code{plasticdb_release_live_only}
-(for a pinned structure use \code{\link[=downloads_structure]{downloads_structure()}}).
+variant's accession gives the variant's FASTA record or structure.
+\code{proteins_fasta()} answers a pinned release too (a merged accession's
+redirect is live only; a snapshot answers 404 for a ref it does not
+hold). The structure, lineage and engineered-parents calls are live
+only: a pinned client gets \code{plasticdb_release_live_only} (for a pinned
+structure use \code{\link[=downloads_structure]{downloads_structure()}}).
 }
+
+\code{proteins_list(include_sequence = TRUE)} adds each record's \code{sequence}
+column (a variant's own); \code{\link[=proteins_sequences]{proteins_sequences()}} uses it, so it needs no
+second download.
 
 Filters are the API's own query parameters, with the same meaning on every
 function: \code{plastic}, \code{include_subtypes}, \code{microorganism}, \code{polarity},
@@ -147,8 +168,9 @@ pet <- proteins_list(plastic = "PET", kind = "wild_type", limit = 5)
 pet[, c("accession", "name", "source_microorganism.name")]
 provenance(pet)$total
 \donttest{
-petase <- proteins_get("PBFCTW", view = "summary")
+petase <- proteins_get("PBFCTW")
 petase$name
+petase$counts
 proteins_interactions("PBFCTW", level = "observation", limit = 3)
 proteins_sequences(plastic = "PHB", kind = "wild_type", min_year = 2025)
 }

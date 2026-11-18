@@ -1,4 +1,4 @@
-structure(list(method = "GET", url = "pdb/proteins/PBMW9H?view=full", 
+structure(list(method = "GET", url = "pdb/proteins/PBMW9H?view=summary", 
     status_code = 200L, headers = structure(list(`cache-control` = "public, no-cache", 
         `content-encoding` = "gzip", `content-type` = "application/json", 
         etag = "W/\"none-05338225ffcb37c58f488d44\"", link = "<https://creativecommons.org/licenses/by/4.0/>; rel=\"license\"", 

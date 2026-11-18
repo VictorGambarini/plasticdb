@@ -1,4 +1,4 @@
-structure(list(method = "GET", url = "pdb/proteins/PBDTZX/interactions?kind=all&limit=3&offset=0", 
+structure(list(method = "GET", url = "pdb/proteins/PBDTZX/interactions?evidence_level=all&limit=3&offset=0", 
     status_code = 404L, headers = structure(list(`content-type` = "application/json", 
         link = "<https://creativecommons.org/licenses/by/4.0/>; rel=\"license\"", 
         `x-plasticdb-release-source` = "live", `content-length` = "308"), class = "httr2_headers"), 

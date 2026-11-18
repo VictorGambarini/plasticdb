@@ -23,9 +23,12 @@ for the few records without one, as in the server's FASTA files); every
 other column goes into \code{mcols()}. Records without a sequence are dropped.
 }
 \details{
-Protein list items carry no sequence, so \code{\link[=proteins_sequences]{proteins_sequences()}} and
-\code{\link[=variants_sequences]{variants_sequences()}} list the records and fetch the FASTA with the same
-filters instead.
+Protein lists carry no sequence unless asked
+(\code{proteins_list(include_sequence = TRUE)} adds a \code{sequence} column, which
+\code{as_aastringset()} accepts). \code{\link[=proteins_sequences]{proteins_sequences()}} and
+\code{\link[=variants_sequences]{variants_sequences()}} ask for it, live or pinned, so they need one list
+call; against a server that does not return it they fall back to the FASTA
+download with the same filters.
 }
 \examples{
 variants <- tibble::tibble(id = 1:2, accession = c("PB0001", NA),

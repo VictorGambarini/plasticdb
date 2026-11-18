@@ -13,14 +13,21 @@
 \alias{evidence_preparations}
 \alias{evidence_preparation}
 \alias{evidence_experiment_preparations}
+\alias{interactions_list}
+\alias{interactions_get}
+\alias{experiments_list}
+\alias{experiments_get}
+\alias{observations_list}
+\alias{observations_get}
 \title{The evidence behind the catalogue}
 \usage{
 evidence_interactions(
   protein,
-  kind = c("all", "direct", "indirect"),
+  evidence_level = c("all", "direct", "indirect"),
   level = c("interaction", "experiment", "observation"),
   include_sequenceless = FALSE,
   limit = Inf,
+  kind = NULL,
   client = plasticdb_client()
 )
 
@@ -43,11 +50,25 @@ evidence_preparations(..., limit = Inf, client = plasticdb_client())
 evidence_preparation(preparation_id, client = plasticdb_client())
 
 evidence_experiment_preparations(experiment_id, client = plasticdb_client())
+
+interactions_list(..., limit = Inf, client = plasticdb_client())
+
+interactions_get(interaction_id, client = plasticdb_client())
+
+experiments_list(..., limit = Inf, client = plasticdb_client())
+
+experiments_get(experiment_id, client = plasticdb_client())
+
+observations_list(..., limit = Inf, client = plasticdb_client())
+
+observations_get(observation_id, client = plasticdb_client())
 }
 \arguments{
 \item{protein}{A protein accession.}
 
-\item{kind}{\code{"all"}, \code{"direct"} or \code{"indirect"} interactions.}
+\item{evidence_level}{\code{"all"} (the default), \code{"direct"} (assayed on the
+protein itself) or \code{"indirect"} (credited through its engineered
+variants) interactions.}
 
 \item{level}{One row per \code{"interaction"}, \code{"experiment"} or
 \code{"observation"}. Deeper levels repeat the interaction's columns and add
@@ -57,11 +78,17 @@ evidence_experiment_preparations(experiment_id, client = plasticdb_client())
 
 \item{limit}{The most records to return (\code{Inf} for all of them).}
 
+\item{kind}{Deprecated: the old name of \code{evidence_level}. It is sent as
+\code{evidence_level}, never alongside it; different values in both signal
+\code{plasticdb_argument_error}.}
+
 \item{client}{A \code{\link[=plasticdb_client]{plasticdb_client()}}.}
 
 \item{...}{Filters (see Details), named as the API names them.}
 
-\item{assay_id, construct_id, preparation_id, experiment_id}{A record's id.}
+\item{assay_id, construct_id, preparation_id, experiment_id, interaction_id}{A record's id.}
+
+\item{observation_id}{A record's id.}
 }
 \value{
 A tibble with provenance, or a \code{plasticdb_record} list.
@@ -90,12 +117,31 @@ Constructs carry sequences: \code{\link[=as_aastringset]{as_aastringset()}} work
 \code{evidence_construct_structures()} the structures linked to a construct
 and \code{evidence_experiment_preparations()} the preparations one experiment
 assayed.
+\item \code{interactions_list()}, \code{experiments_list()} and \code{observations_list()}
+list the spine as flat tables of every public record (the columns of
+the release tables of the same name; an interaction adds \code{actor_type}
+and the actors' accessions, \code{product_compound_ids} is a list column),
+and \code{interactions_get()}, \code{experiments_get()} and \code{observations_get()}
+return one by id. They need no protein: filter with \code{plastic} (and
+\code{include_subtypes}), \code{plastic_id}, \code{microorganism} (the evidence that
+credits the organism, its enzymes' assays included), \code{protein} (an
+accession), \code{evidence_level} (\code{"all"}, \code{"direct"} or \code{"indirect"};
+\code{"direct"} and \code{"indirect"} need \code{protein} or \code{microorganism}),
+\code{paper_id}, \code{doi}, \code{polarity}, \code{evidence_method}, \code{substrate_form},
+\code{measurement_type} and \code{has_quantitative}. Experiments also take
+\code{interaction_id}, and observations \code{interaction_id} and \code{experiment_id}.
+On interactions the experiment and observation filters ask one of its
+experiments to match them all. These lists answer a pinned release too.
+Records are visible exactly as in a release: staged, withdrawn or merged
+records are never listed.
 }
 }
 \examples{
 obs <- evidence_interactions("PBFCTW", level = "observation", limit = 2)
 dim(obs)
 \donttest{
+interactions_list(plastic = "PET", evidence_level = "direct",
+    protein = "PBFCTW", limit = 5)
 constructs <- evidence_constructs(protein = "PBFCTW", limit = 2)
 as_aastringset(constructs)
 }
