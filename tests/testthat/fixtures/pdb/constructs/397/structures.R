@@ -4,5 +4,5 @@ structure(list(method = "GET", url = "pdb/constructs/397/structures",
         link = "<https://creativecommons.org/licenses/by/4.0/>; rel=\"license\"", 
         `x-plasticdb-release-source` = "live", `content-length` = "12"), class = "httr2_headers"), 
     body = charToRaw("{\"items\":[]}"), timing = c(redirect = 0, 
-    namelookup = 3.5e-05, connect = 3.5e-05, pretransfer = 0.000147, 
-    starttransfer = 0.043385, total = 0.043479), cache = new.env(parent = emptyenv())), class = "httr2_response")
+    namelookup = 3.8e-05, connect = 3.8e-05, pretransfer = 0.000151, 
+    starttransfer = 0.053955, total = 0.054103), cache = new.env(parent = emptyenv())), class = "httr2_response")

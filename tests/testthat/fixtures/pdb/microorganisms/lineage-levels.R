@@ -5,6 +5,6 @@ structure(list(method = "GET", url = "pdb/microorganisms/lineage-levels",
         vary = "Accept-Encoding", `x-plasticdb-release-source` = "live", 
         `content-length` = "7148"), class = "httr2_headers"), 
     body = charToRaw("{\"domain\":[\"Archaea\",\"Bacteria\",\"Eukaryota\"],\"kingdom\":[\"Bacillati\",\"Fungi\",\"Fusobacteriati\"],\"phylum\":[\"Acidobacteriota\",\"Actinomycetota\",\"Arthropoda\"],\"class\":[\"Acidimicrobiia\",\"Actinomycetes\",\"Agaricomycetes\"],\"order\":[\"Acetivibrionales\",\"Acetobacterales\",\"Acidimicrobiales\"],\"family\":[\"Acetivibrionaceae\",\"Acetobacteraceae\",\"Adustoporiaceae\"],\"genus\":[\"Abortiporus\",\"Absidia\",\"Acetivibrio\"]}"), 
-    timing = c(redirect = 0, namelookup = 3.7e-05, connect = 3.7e-05, 
-    pretransfer = 0.000153, starttransfer = 0.061797, total = 0.062083
+    timing = c(redirect = 0, namelookup = 3.9e-05, connect = 3.9e-05, 
+    pretransfer = 0.000146, starttransfer = 0.054853, total = 0.055488
     ), cache = new.env(parent = emptyenv())), class = "httr2_response")

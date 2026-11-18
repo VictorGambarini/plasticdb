@@ -4,6 +4,6 @@ structure(list(method = "GET", url = "pdb/variants/PBDTZX/fasta",
         `x-plasticdb-release-source` = "live", `x-ratelimit-limit` = "200", 
         `x-ratelimit-remaining` = "199", `content-length` = "525"), class = "httr2_headers"), 
     body = charToRaw(">PBDTZX | Dm-TA-ΔLCC | uncultured bacterium | 2027 | PET | kind=engineered evidence_scope=all_recorded positive_plastics=PET negative_plastics= inconclusive_plastics= | engineered | origin_type=metagenome, environment=compost, country=Japan\nMKQFAVIFALALASVSAQSNPYQRGPNPTRSALTADGPFSVATYTVSRLSVSGFGGGVIYYPTGTSLTFGGIAMSPGYTADASSLAWLGRRLASHGFVVLVINTNSRFDYPDSRASQLSAALNYLRTSSPSAVRARLDANRLAVAGHSMGGGGTLRIAEQNPSLKAAVPLTPWHTDKTFNTSVPVLIVGAEADTVAPVSQHAIPFYQNLPSTTPKVYVELDNASHTAPNSNNAAISVYTISWMKLWVDNDTRYRQFLCNVNDPALSDFRTNNRHAQHHHHHH\n"), 
-    timing = c(redirect = 0, namelookup = 3.7e-05, connect = 3.7e-05, 
-    pretransfer = 0.000164, starttransfer = 0.062366, total = 0.062458
+    timing = c(redirect = 0, namelookup = 3.6e-05, connect = 3.6e-05, 
+    pretransfer = 0.000141, starttransfer = 0.039713, total = 0.039894
     ), cache = new.env(parent = emptyenv())), class = "httr2_response")

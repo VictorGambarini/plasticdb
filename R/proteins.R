@@ -16,7 +16,9 @@ warn_merged <- function(old, new) {
 #'   records with a positive result are listed unless `polarity =` or
 #'   `include_negative = TRUE` says otherwise.
 #' * `proteins_get()` returns one protein by accession (`PB...`, any case)
-#'   or numeric id. An engineered variant's accession returns the variant, as
+#'   or numeric id, by default as the `"summary"` view (with `counts`);
+#'   `view = "full"` embeds its interactions, variants, kinetics and
+#'   properties. An engineered variant's accession returns the variant, as
 #'   [variants_get()] does. A merged accession signals `plasticdb_merged`
 #'   naming the survivor (`merged_into`); with `follow_merges = TRUE` the
 #'   survivor is returned instead, with a `plasticdb_merged_warning`. A
@@ -38,9 +40,16 @@ warn_merged <- function(old, new) {
 #'   record and primary structure (PDB text, or a file with `path`);
 #'   `proteins_lineage()` a wild type with every variant engineered from it;
 #'   `proteins_engineered_parents()` the wild types that have variants. A
-#'   variant's accession gives the variant's FASTA record or structure. These
-#'   four are live only: a pinned client gets `plasticdb_release_live_only`
-#'   (for a pinned structure use [downloads_structure()]).
+#'   variant's accession gives the variant's FASTA record or structure.
+#'   `proteins_fasta()` answers a pinned release too (a merged accession's
+#'   redirect is live only; a snapshot answers 404 for a ref it does not
+#'   hold). The structure, lineage and engineered-parents calls are live
+#'   only: a pinned client gets `plasticdb_release_live_only` (for a pinned
+#'   structure use [downloads_structure()]).
+#'
+#' `proteins_list(include_sequence = TRUE)` adds each record's `sequence`
+#' column (a variant's own); [proteins_sequences()] uses it, so it needs no
+#' second download.
 #'
 #' Filters are the API's own query parameters, with the same meaning on every
 #' function: `plastic`, `include_subtypes`, `microorganism`, `polarity`,
@@ -56,11 +65,21 @@ warn_merged <- function(old, new) {
 #'
 #' @param ... Filters (see Details), named as the API names them.
 #' @param accession,ref A protein accession or numeric id.
-#' @param view `"full"` or `"summary"` (leaves out the per-record evidence
-#'   lists, much smaller for well-studied enzymes).
+#' @param view `"summary"` (the default, as on the server since 2.89.0) or
+#'   `"full"`. The summary carries the record's own fields and `counts` (how
+#'   many interactions, variants, kinetics and properties it has) but not
+#'   those lists, and is much smaller for well-studied enzymes; `"full"`
+#'   embeds `interactions`, `variants`, `kinetics` and `properties`. Use
+#'   [proteins_interactions()], [proteins_variants()], [proteins_kinetics()]
+#'   and [proteins_properties()] to read the lists as tibbles.
 #' @param include_sequenceless Include records without a sequence.
 #' @param follow_merges Return the survivor of a merged accession.
-#' @param kind `"all"`, `"direct"` or `"indirect"` interactions.
+#' @param evidence_level `"all"` (the default), `"direct"` (assayed on the
+#'   protein itself) or `"indirect"` (credited through its engineered
+#'   variants) interactions.
+#' @param kind Deprecated: the old name of `evidence_level`. It is sent as
+#'   `evidence_level`, never alongside it; different values in both signal
+#'   `plasticdb_argument_error`.
 #' @param level One row per `"interaction"`, `"experiment"` or
 #'   `"observation"`. Deeper levels repeat the interaction's columns and add
 #'   `experiment.*` (and `observation.*`) columns.
@@ -81,8 +100,9 @@ warn_merged <- function(old, new) {
 #' pet[, c("accession", "name", "source_microorganism.name")]
 #' provenance(pet)$total
 #' \donttest{
-#' petase <- proteins_get("PBFCTW", view = "summary")
+#' petase <- proteins_get("PBFCTW")
 #' petase$name
+#' petase$counts
 #' proteins_interactions("PBFCTW", level = "observation", limit = 3)
 #' proteins_sequences(plastic = "PHB", kind = "wild_type", min_year = 2025)
 #' }
@@ -98,7 +118,7 @@ proteins_list <- function(..., limit = Inf, client = plasticdb_client()) {
 
 #' @rdname proteins
 #' @export
-proteins_get <- function(accession, view = c("full", "summary"),
+proteins_get <- function(accession, view = c("summary", "full"),
                             include_sequenceless = FALSE, follow_merges = FALSE,
                             client = plasticdb_client()) {
     view <- match.arg(view)
@@ -133,6 +153,24 @@ proteins_get <- function(accession, view = c("full", "summary"),
         accession, MAX_MERGE_HOPS))
 }
 
+# `evidence_level`, or the deprecated `kind` alias (warned about once per
+# session); both given and different is an error. Only one is ever sent.
+resolve_evidence_level <- function(evidence_level, unset, kind, where) {
+    choices <- c("all", "direct", "indirect")
+    if (is.null(kind)) {
+        return(match.arg(evidence_level, choices))
+    }
+    kind <- match.arg(kind, choices)
+    rlang::warn(sprintf("`kind` of %s() is deprecated: use `evidence_level`.",
+        where), class = "plasticdb_deprecated", .frequency = "once",
+        .frequency_id = paste0("plasticdb_kind_", where))
+    if (!unset && !identical(match.arg(evidence_level, choices), kind)) {
+        arg_error(paste("`kind` and `evidence_level` disagree: pass only",
+            "`evidence_level`."))
+    }
+    kind
+}
+
 sub_list <- function(client, endpoint, accession, params = list(),
                         limit = Inf, kind = NULL, level = "interaction") {
     list_tibble(client, endpoint, params, list(accession = accession),
@@ -142,15 +180,18 @@ sub_list <- function(client, endpoint, accession, params = list(),
 #' @rdname proteins
 #' @export
 proteins_interactions <- function(accession,
-                                    kind = c("all", "direct", "indirect"),
+                                    evidence_level = c("all", "direct",
+                                        "indirect"),
                                     level = c("interaction", "experiment",
                                         "observation"),
                                     include_sequenceless = FALSE, limit = Inf,
+                                    kind = NULL,
                                     client = plasticdb_client()) {
-    kind <- match.arg(kind)
+    evidence_level <- resolve_evidence_level(evidence_level,
+        missing(evidence_level), kind, "proteins_interactions")
     level <- match.arg(level)
     sub_list(client, ENDPOINTS$proteins_interactions, accession,
-        list(kind = kind, include_sequenceless =
+        list(evidence_level = evidence_level, include_sequenceless =
             if (isTRUE(include_sequenceless)) TRUE),
         limit = limit, kind = "interaction", level = level)
 }

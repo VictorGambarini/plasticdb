@@ -9,10 +9,11 @@ PROTEIN_FILTERS <- c("q", "name", "plasticdb_id", "accession", "plastic",
     "polarity", "activity_class", "min_kcat", "max_km", "min_kcat_km",
     "min_vmax", "has_structure", "has_sequence", "ec_number", "min_tm",
     "max_tm", "origin_type", "origin_environment", "kind")
-PROTEIN_LIST_FILTERS <- c(PROTEIN_FILTERS, "include_sequenceless", "sort_by",
-    "sort_order", "updated_since")
+PROTEIN_LIST_FILTERS <- c(PROTEIN_FILTERS, "include_sequenceless",
+    "include_sequence", "sort_by", "sort_order", "updated_since")
 VARIANT_LIST_FILTERS <- c(setdiff(PROTEIN_FILTERS, c("kind", "plasticdb_id")),
-    "include_sequenceless", "sort_by", "sort_order", "updated_since")
+    "include_sequenceless", "include_sequence", "sort_by", "sort_order",
+    "updated_since")
 
 MICROORGANISM_FILTERS <- c("q", "name", "plastic", "include_subtypes",
     "plastic_id", "tax_id", "year", "min_year", "max_year", "temp_class",
@@ -41,6 +42,14 @@ MATERIAL_FILTERS <- c("protein", "protein_id", "protein_variant_id",
     "paper_id", "doi")
 BINDING_ASSAY_FILTERS <- c(MATERIAL_FILTERS, "plastic", "plastic_id",
     "include_subtypes")
+
+# The evidence lists' filters; the deeper lists add their parents' ids.
+INTERACTION_FILTERS <- c("plastic", "include_subtypes", "plastic_id",
+    "microorganism", "protein", "evidence_level", "paper_id", "doi",
+    "polarity", "evidence_method", "substrate_form", "measurement_type",
+    "has_quantitative")
+EXPERIMENT_FILTERS <- c(INTERACTION_FILTERS, "interaction_id")
+OBSERVATION_FILTERS <- c(EXPERIMENT_FILTERS, "experiment_id")
 
 # The filters in `...` as query parameters; an unknown name is an error.
 check_filters <- function(filters, allowed, where) {
