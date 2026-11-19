@@ -6,7 +6,7 @@ authors:
   - family-names: Gambarini
     given-names: Victor
 license: MIT
-version: 0.99.4
+version: 0.99.5
 repository-code: "https://github.com/VictorGambarini/plasticdb"
 url: "https://v2.plasticdb.org"
 keywords:

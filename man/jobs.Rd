@@ -251,18 +251,22 @@ limit, or more than 20 genomes, is \code{plasticdb_payload_too_large}.
 res <- tryCatch(submit_job("no_such_job", ">q\nMKVLAAGIVALLLAAGCSS"),
     plasticdb_argument_error = function(e) conditionMessage(e))
 res
-\dontrun{
-client <- plasticdb_client(api_key = Sys.getenv("PLASTICDB_API_KEY"),
-    release = "2026.50")
-job <- annotate_genome("genome.faa.gz", client = client)
-job <- wait_job(job, client = client)
-hits <- job_results(job, client = client)
-cmp <- compare_genomes(list(K12 = "k12.faa", O157 = "o157.faa"),
-    client = client)
-tree <- job_results(wait_job(build_tree(plastic = "PET", genus =
-    "Pseudomonas", client = client), client = client), client = client)
-search_sequence("MNFPRASRLMQAAVLGGLMAVSAAATAQTNPYARGPNPTAASLEASAGPF",
-    client = client)$hits
+\donttest{
+## Jobs need an API key (https://v2.plasticdb.org/profile/api-keys).
+if (nzchar(Sys.getenv("PLASTICDB_API_KEY"))) {
+    client <- plasticdb_client()
+    genome <- tempfile(fileext = ".faa")
+    writeLines(c(">p1", "MNFPRASRLMQAAVLGGLMAVSAAATAQTNPYARGPNPTAASLEASAGPF"),
+        genome)
+    job <- annotate_genome(genome, client = client)
+    job <- wait_job(job, client = client)
+    hits <- job_results(job, client = client)
+    cmp <- compare_genomes(list(A = genome, B = genome), client = client)
+    tree <- job_results(wait_job(build_tree(plastic = "PET", genus =
+        "Pseudomonas", client = client), client = client), client = client)
+    search_sequence("MNFPRASRLMQAAVLGGLMAVSAAATAQTNPYARGPNPTAASLEASAGPF",
+        client = client)$hits
+}
 }
 }
 \seealso{

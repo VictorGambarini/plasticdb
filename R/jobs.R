@@ -136,18 +136,22 @@ LEAN <- list(include = "none")
 #' res <- tryCatch(submit_job("no_such_job", ">q\nMKVLAAGIVALLLAAGCSS"),
 #'     plasticdb_argument_error = function(e) conditionMessage(e))
 #' res
-#' \dontrun{
-#' client <- plasticdb_client(api_key = Sys.getenv("PLASTICDB_API_KEY"),
-#'     release = "2026.50")
-#' job <- annotate_genome("genome.faa.gz", client = client)
-#' job <- wait_job(job, client = client)
-#' hits <- job_results(job, client = client)
-#' cmp <- compare_genomes(list(K12 = "k12.faa", O157 = "o157.faa"),
-#'     client = client)
-#' tree <- job_results(wait_job(build_tree(plastic = "PET", genus =
-#'     "Pseudomonas", client = client), client = client), client = client)
-#' search_sequence("MNFPRASRLMQAAVLGGLMAVSAAATAQTNPYARGPNPTAASLEASAGPF",
-#'     client = client)$hits
+#' \donttest{
+#' ## Jobs need an API key (https://v2.plasticdb.org/profile/api-keys).
+#' if (nzchar(Sys.getenv("PLASTICDB_API_KEY"))) {
+#'     client <- plasticdb_client()
+#'     genome <- tempfile(fileext = ".faa")
+#'     writeLines(c(">p1", "MNFPRASRLMQAAVLGGLMAVSAAATAQTNPYARGPNPTAASLEASAGPF"),
+#'         genome)
+#'     job <- annotate_genome(genome, client = client)
+#'     job <- wait_job(job, client = client)
+#'     hits <- job_results(job, client = client)
+#'     cmp <- compare_genomes(list(A = genome, B = genome), client = client)
+#'     tree <- job_results(wait_job(build_tree(plastic = "PET", genus =
+#'         "Pseudomonas", client = client), client = client), client = client)
+#'     search_sequence("MNFPRASRLMQAAVLGGLMAVSAAATAQTNPYARGPNPTAASLEASAGPF",
+#'         client = client)$hits
+#' }
 #' }
 NULL
 
@@ -576,16 +580,22 @@ as_job <- function(job, client) {
 #' res <- tryCatch(job_shared("https://v2.plasticdb.org/jobs/shared/no-such"),
 #'     plasticdb_not_found = function(e) conditionMessage(e))
 #' res
-#' \dontrun{
-#' client <- plasticdb_client(api_key = Sys.getenv("PLASTICDB_API_KEY"))
-#' job <- wait_job("3f2c9a1e-7b4d-4e8a-9c0f-1a2b3c4d5e6f", timeout = 3600,
-#'     client = client)
-#' hits <- job_results(job, client = client)
-#' job_provenance(job)$reference_sha256
-#' job_download(job, tempdir(), client = client)
-#' link <- job_share(job, expires_in_days = 30, client = client)
-#' shared <- job_shared(link$url)
-#' job_results(shared)
+#' \donttest{
+#' ## Your own jobs need an API key; this uses your most recent finished job.
+#' if (nzchar(Sys.getenv("PLASTICDB_API_KEY"))) {
+#'     client <- plasticdb_client()
+#'     recent <- jobs_list(limit = 5, client = client)
+#'     recent <- recent[recent$status == "done", ]
+#'     if (nrow(recent)) {
+#'         job <- wait_job(recent$id[[1]], timeout = 3600, client = client)
+#'         hits <- job_results(job, client = client)
+#'         job_provenance(job)$reference_sha256
+#'         job_download(job, tempdir(), client = client)
+#'         link <- job_share(job, expires_in_days = 30, client = client)
+#'         shared <- job_shared(link$url)
+#'         job_results(shared)
+#'     }
+#' }
 #' }
 NULL
 

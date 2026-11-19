@@ -182,16 +182,22 @@ the submission's idempotency key returned an existing job.
 res <- tryCatch(job_shared("https://v2.plasticdb.org/jobs/shared/no-such"),
     plasticdb_not_found = function(e) conditionMessage(e))
 res
-\dontrun{
-client <- plasticdb_client(api_key = Sys.getenv("PLASTICDB_API_KEY"))
-job <- wait_job("3f2c9a1e-7b4d-4e8a-9c0f-1a2b3c4d5e6f", timeout = 3600,
-    client = client)
-hits <- job_results(job, client = client)
-job_provenance(job)$reference_sha256
-job_download(job, tempdir(), client = client)
-link <- job_share(job, expires_in_days = 30, client = client)
-shared <- job_shared(link$url)
-job_results(shared)
+\donttest{
+## Your own jobs need an API key; this uses your most recent finished job.
+if (nzchar(Sys.getenv("PLASTICDB_API_KEY"))) {
+    client <- plasticdb_client()
+    recent <- jobs_list(limit = 5, client = client)
+    recent <- recent[recent$status == "done", ]
+    if (nrow(recent)) {
+        job <- wait_job(recent$id[[1]], timeout = 3600, client = client)
+        hits <- job_results(job, client = client)
+        job_provenance(job)$reference_sha256
+        job_download(job, tempdir(), client = client)
+        link <- job_share(job, expires_in_days = 30, client = client)
+        shared <- job_shared(link$url)
+        job_results(shared)
+    }
+}
 }
 }
 \seealso{
