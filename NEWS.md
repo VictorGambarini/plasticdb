@@ -1,5 +1,10 @@
 # plasticdb (development)
 
+# plasticdb 0.99.6
+
+Style fixes from the 0.99.5 build report: one example line over 80
+characters and one indent that was not a multiple of 4. No behaviour change.
+
 # plasticdb 0.99.5
 
 Changes from the first Bioconductor build report (0.99.4). No behaviour change.

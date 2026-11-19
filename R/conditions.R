@@ -273,7 +273,7 @@ abort_release_reason <- function(resp, status, reason, body, message,
 
 # The general mapping from the HTTP status; always signals.
 abort_by_status <- function(resp, status, body, named, detail, message,
-                               abort_with) {
+    abort_with) {
     if (status == 429L || status == 503L) {
         abort_with(if (status == 429L) "rate_limit" else "service_unavailable",
             message, retry_after = parse_retry_after(
