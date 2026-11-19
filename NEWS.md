@@ -1,5 +1,7 @@
 # plasticdb (development)
 
+* The README and package documentation state the code's provenance
+  (AI-assisted), per Bioconductor's AI and third-party code policy.
 * Security hardening: GitHub Actions are pinned to commit SHAs, Dependabot keeps
   them current, and `SECURITY.md` describes private vulnerability reporting.
 
