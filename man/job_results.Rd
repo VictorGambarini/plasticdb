@@ -130,7 +130,19 @@ message) unless \code{error = FALSE}.
 \code{annotate_genome}, \code{compare_genomes} (\code{source_label} names the genome)
 and \code{hmm_screen}, every stored hit as a tibble, paged from the server
 500 at a time (the results file and page also hide hits under 70 \%
-reference coverage by default; this does not); for \code{pathway_analysis}
+reference coverage by default; this does not). An \code{hmm_screen} hit is
+a profile match, not an alignment: \code{pident}, \code{length}, \code{qcov} and
+\code{scov} are always \code{NA} (never 0), jobs run before server 2.90.0
+included, so identity and coverage filters do not apply to them (test
+\code{is.na()} or skip them). \code{subject_seq_id} is the profile name and
+\code{profile_accession} its accession; \code{evalue} and \code{bitscore} are the
+full-sequence values, \code{domain_score} (\code{double}), \code{domain_c_evalue} and
+\code{domain_i_evalue} those of the best domain, \code{hmm_from}/\code{hmm_to} (its span
+on the profile) and \code{env_from}/\code{env_to} (its envelope on your sequence;
+1-based, inclusive) are \code{integer}. All of these are \code{NA} on DIAMOND hits
+and on HMM jobs run before 2.90.0. The HMM TSV from \code{job_download()}
+has 8 more columns after \code{calibration_status}: read it by header name.
+For \code{pathway_analysis}
 one row per pathway step (\code{present}, the best hit); for
 \code{annotate_list} your table's rows with PlasticDB's columns added; for
 \code{build_tree} a \code{plasticdb_tree}: \code{newick} (the cladogram as Newick
