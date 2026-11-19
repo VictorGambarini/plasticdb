@@ -85,48 +85,82 @@ from_path <- function(path, ext) {
 # one-record FASTA (`>query`). Temporary files go in `dir`.
 to_upload <- function(value, ext, dir, stem = "input", kind = "FASTA") {
     if (is_xstringset(value) || is_xstring(value)) {
-        if (ext != "fasta") {
-            arg_error(sprintf("A %s cannot be the %s input.",
-                class(value)[[1]], kind))
-        }
-        set <- value
-        if (is_xstring(set)) {
-            set <- methods::as(set, paste0(class(set)[[1]], "Set"))
-        }
-        if (!length(set)) {
-            arg_error(sprintf("The %s input is empty.", kind))
-        }
-        if (is.null(names(set))) {
-            names(set) <- sprintf("seq_%d", seq_along(set))
-        }
-        return(write_upload(dir, upload_name(stem, ext, FALSE),
-            function(path) Biostrings::writeXStringSet(set, path)))
+        return(upload_xstringset(value, ext, dir, stem, kind))
     }
     if (is.data.frame(value)) {
-        if (ext != "tsv") {
-            arg_error(sprintf("A data frame cannot be the %s input.", kind))
-        }
-        if (!nrow(value)) {
-            arg_error(sprintf("The %s input is empty.", kind))
-        }
-        clean_cells <- lapply(value, function(col) {
-            col <- as.character(col)
-            col[is.na(col)] <- ""
-            gsub("[\t\r\n]", " ", col)
-        })
-        lines <- c(paste(gsub("[\t\r\n]", " ", names(value)), collapse = "\t"),
-            do.call(paste, c(clean_cells, sep = "\t")))
-        return(write_upload(dir, upload_name(stem, ext, FALSE),
-            function(path) writeLines(lines, path, useBytes = TRUE)))
+        return(upload_table(value, ext, dir, stem, kind))
     }
     if (is.raw(value)) {
-        if (!length(value)) {
-            arg_error(sprintf("The %s input is empty.", kind))
-        }
-        gz <- length(value) >= 2L && identical(value[seq_len(2L)], GZIP_MAGIC)
-        return(write_upload(dir, upload_name(stem, ext, gz),
-            function(path) writeBin(value, path)))
+        return(upload_raw(value, ext, dir, stem, kind))
     }
+    upload_text(value, ext, dir, stem, kind)
+}
+
+upload_xstringset <- function(value, ext, dir, stem, kind) {
+    if (ext != "fasta") {
+        arg_error(sprintf("A %s cannot be the %s input.",
+            class(value)[[1]], kind))
+    }
+    set <- value
+    if (is_xstring(set)) {
+        set <- methods::as(set, paste0(class(set)[[1]], "Set"))
+    }
+    if (!length(set)) {
+        arg_error(sprintf("The %s input is empty.", kind))
+    }
+    if (is.null(names(set))) {
+        names(set) <- sprintf("seq_%d", seq_along(set))
+    }
+    write_upload(dir, upload_name(stem, ext, FALSE),
+        function(path) Biostrings::writeXStringSet(set, path))
+}
+
+upload_table <- function(value, ext, dir, stem, kind) {
+    if (ext != "tsv") {
+        arg_error(sprintf("A data frame cannot be the %s input.", kind))
+    }
+    if (!nrow(value)) {
+        arg_error(sprintf("The %s input is empty.", kind))
+    }
+    clean_cells <- lapply(value, function(col) {
+        col <- as.character(col)
+        col[is.na(col)] <- ""
+        gsub("[\t\r\n]", " ", col)
+    })
+    lines <- c(paste(gsub("[\t\r\n]", " ", names(value)), collapse = "\t"),
+        do.call(paste, c(clean_cells, sep = "\t")))
+    write_upload(dir, upload_name(stem, ext, FALSE),
+        function(path) writeLines(lines, path, useBytes = TRUE))
+}
+
+upload_raw <- function(value, ext, dir, stem, kind) {
+    if (!length(value)) {
+        arg_error(sprintf("The %s input is empty.", kind))
+    }
+    gz <- length(value) >= 2L && identical(value[seq_len(2L)], GZIP_MAGIC)
+    write_upload(dir, upload_name(stem, ext, gz),
+        function(path) writeBin(value, path))
+}
+
+# FASTA text starts with '>'; a lone line of residues becomes `>query`.
+fasta_text <- function(value) {
+    text <- trimws(value)
+    if (startsWith(text, ">")) {
+        return(text)
+    }
+    single <- !grepl("\n", text, fixed = TRUE)
+    if (single && grepl("^[A-Za-z*[:space:]-]+$", text) &&
+        nchar(text) >= 5L) {
+        text <- paste0(">query\n", text)
+    } else if (single) {
+        arg_error(sprintf(paste("%s is neither an existing file nor",
+            "FASTA text (which starts with '>')."), encodeString(value,
+            quote = "\"")))
+    }
+    text
+}
+
+upload_text <- function(value, ext, dir, stem, kind) {
     if (is.character(value) && length(value) > 1L) {
         value <- paste(value, collapse = "\n")
     }
@@ -143,19 +177,8 @@ to_upload <- function(value, ext, dir, stem = "input", kind = "FASTA") {
         arg_error(sprintf("The %s input is empty.", kind))
     }
     # A table's trailing empty cells are data; only FASTA is trimmed.
-    text <- if (ext == "fasta") trimws(value) else
+    text <- if (ext == "fasta") fasta_text(value) else
         gsub("^[\r\n]+|[\r\n]+$", "", value)
-    if (ext == "fasta" && !startsWith(text, ">")) {
-        single <- !grepl("\n", text, fixed = TRUE)
-        if (single && grepl("^[A-Za-z*[:space:]-]+$", text) &&
-            nchar(text) >= 5L) {
-            text <- paste0(">query\n", text)
-        } else if (single) {
-            arg_error(sprintf(paste("%s is neither an existing file nor",
-                "FASTA text (which starts with '>')."), encodeString(value,
-                quote = "\"")))
-        }
-    }
     write_upload(dir, upload_name(stem, ext, FALSE),
         function(path) writeLines(text, path, useBytes = TRUE))
 }

@@ -5,8 +5,9 @@ type: software
 authors:
   - family-names: Gambarini
     given-names: Victor
+    orcid: "https://orcid.org/0000-0002-5639-6820"
 license: MIT
-version: 0.99.4
+version: 0.99.5
 repository-code: "https://github.com/VictorGambarini/plasticdb"
 url: "https://v2.plasticdb.org"
 keywords:

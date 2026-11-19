@@ -1,5 +1,17 @@
 # plasticdb (development)
 
+# plasticdb 0.99.5
+
+Changes from the first Bioconductor build report (0.99.4). No behaviour change.
+
+* Tests compare doubles parsed from JSON with `expect_equal()`, which fixed a
+  last-ulp failure on macOS arm64.
+* Added the biocView `SequenceMatching`.
+* `abort_from_response()`, `pdb_download()` and `to_upload()` are split into
+  small internal helpers (none over 50 lines).
+* Examples use `\donttest{}` instead of `\dontrun{}`; job examples run only
+  when `PLASTICDB_API_KEY` is set, and write to `tempdir()`.
+
 # plasticdb 0.99.4
 
 The repository is renamed `VictorGambarini/plasticdb` (Bioconductor needs it to

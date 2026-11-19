@@ -215,6 +215,20 @@ abort_from_response <- function(resp, call = NULL) {
     if (status %in% c(301L, 308L) && named && is.character(body$accession)) {
         abort_redirect(resp, body, abort_with)
     }
+    abort_special(status, reason, body, detail, message, abort_with)
+    abort_release_reason(resp, status, reason, body, message, abort_with)
+    if (status == 422L && length(unsupported_parameters(detail))) {
+        common$reason <- "release_unsupported"
+        abort_with("release_unsupported_filter", message,
+            parameters = unsupported_parameters(detail),
+            errors = validation_errors(detail))
+    }
+    abort_by_status(resp, status, body, named, detail, message, abort_with)
+}
+
+# Answers recognised by status and reason: engineered variant, expired
+# results, a reused idempotency key. Returns when none applies.
+abort_special <- function(status, reason, body, detail, message, abort_with) {
     if (status == 404L && identical(reason, "engineered_variant")) {
         accession <- body_text_field(body, "accession") %||% ""
         abort_with("engineered_variant", paste0(variant_message(accession),
@@ -232,29 +246,34 @@ abort_from_response <- function(resp, call = NULL) {
         abort_with("idempotency_key_reused", message,
             errors = validation_errors(detail))
     }
+    invisible(NULL)
+}
 
-    if (!is.null(reason)) {
-        kind <- switch(paste(status, reason),
-            `404 unknown` = "release_unknown",
-            `404 no_artefacts` = "release_no_artefacts",
-            `409 live_only` = "release_live_only",
-            `503 not_mounted` = "release_not_mounted",
-            NULL)
-        if (!is.null(kind)) {
-            abort_with(kind, message, release = body_text_field(body,
-                "release"), current_release = body_text_field(body,
-                "current_release"),
-                retry_after = if (status == 503L)
-                    parse_retry_after(resp$headers[["retry-after"]]))
-        }
+# A release problem named by the server's reason. Returns when none applies.
+abort_release_reason <- function(resp, status, reason, body, message,
+                                    abort_with) {
+    if (is.null(reason)) {
+        return(invisible(NULL))
     }
+    kind <- switch(paste(status, reason),
+        `404 unknown` = "release_unknown",
+        `404 no_artefacts` = "release_no_artefacts",
+        `409 live_only` = "release_live_only",
+        `503 not_mounted` = "release_not_mounted",
+        NULL)
+    if (!is.null(kind)) {
+        abort_with(kind, message, release = body_text_field(body,
+            "release"), current_release = body_text_field(body,
+            "current_release"),
+            retry_after = if (status == 503L)
+                parse_retry_after(resp$headers[["retry-after"]]))
+    }
+    invisible(NULL)
+}
 
-    if (status == 422L && length(unsupported_parameters(detail))) {
-        common$reason <- "release_unsupported"
-        abort_with("release_unsupported_filter", message,
-            parameters = unsupported_parameters(detail),
-            errors = validation_errors(detail))
-    }
+# The general mapping from the HTTP status; always signals.
+abort_by_status <- function(resp, status, body, named, detail, message,
+                               abort_with) {
     if (status == 429L || status == 503L) {
         abort_with(if (status == 429L) "rate_limit" else "service_unavailable",
             message, retry_after = parse_retry_after(

@@ -1,10 +1,11 @@
 Package: plasticdb
 Type: Package
 Title: Client for the PlasticDB Plastic Biodegradation Database
-Version: 0.99.4
+Version: 0.99.5
 Authors@R:
     person("Victor", "Gambarini", role = c("aut", "cre"),
-           email = "victor.gambarini@gmail.com")
+           email = "victor.gambarini@gmail.com",
+           comment = c(ORCID = "0000-0002-5639-6820"))
 Description: Query PlasticDB (<https://v2.plasticdb.org>), a curated database of
     microorganisms and proteins linked to plastic biodegradation, and the
     evidence behind each link (interactions, experiments and observations).
@@ -44,7 +45,7 @@ Suggests:
     withr
 VignetteBuilder: knitr
 biocViews: Software, DataImport, ThirdPartyClient, Annotation, Proteomics,
-    Microbiome, Metagenomics
+    Microbiome, Metagenomics, SequenceMatching
 Config/testthat/edition: 3
 Roxygen: list(markdown = TRUE)
 Config/roxygen2/version: 8.1.1
