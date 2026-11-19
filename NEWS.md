@@ -1,5 +1,22 @@
 # plasticdb (development)
 
+# plasticdb 0.99.3
+
+Adapted to server 2.90.0 (the contract is re-vendored).
+
+* `job_results()` on an `hmm_screen` job gains the columns `profile_accession`
+  (character), `domain_score`, `domain_c_evalue`, `domain_i_evalue` (double)
+  and `hmm_from`, `hmm_to`, `env_from`, `env_to` (integer; 1-based, inclusive).
+  They are `NA` on DIAMOND hits and on HMM jobs run before server 2.90.0.
+* On HMM hits `pident`, `length`, `qcov` and `scov` are always `NA`, never 0,
+  so identity and coverage filters do not apply to them. `evalue` and
+  `bitscore` are the full-sequence values; `subject_seq_id` is the profile
+  name.
+* The HMM TSV download has 8 trailing columns after `calibration_status`; read
+  it by header name.
+* New HMM test fixtures: a hit with the new fields and an old-style row with
+  all of them null.
+
 * The README and package documentation state the code's provenance
   (AI-assisted), per Bioconductor's AI and third-party code policy.
 * Security hardening: GitHub Actions are pinned to commit SHAs, Dependabot keeps

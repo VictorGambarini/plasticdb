@@ -495,7 +495,19 @@ as_job <- function(job, client) {
 #'   `annotate_genome`, `compare_genomes` (`source_label` names the genome)
 #'   and `hmm_screen`, every stored hit as a tibble, paged from the server
 #'   500 at a time (the results file and page also hide hits under 70 %
-#'   reference coverage by default; this does not); for `pathway_analysis`
+#'   reference coverage by default; this does not). An `hmm_screen` hit is
+#'   a profile match, not an alignment: `pident`, `length`, `qcov` and
+#'   `scov` are always `NA` (never 0), jobs run before server 2.90.0
+#'   included, so identity and coverage filters do not apply to them (test
+#'   `is.na()` or skip them). `subject_seq_id` is the profile name and
+#'   `profile_accession` its accession; `evalue` and `bitscore` are the
+#'   full-sequence values, `domain_score` (`double`), `domain_c_evalue` and
+#'   `domain_i_evalue` those of the best domain, `hmm_from`/`hmm_to` (its span
+#'   on the profile) and `env_from`/`env_to` (its envelope on your sequence;
+#'   1-based, inclusive) are `integer`. All of these are `NA` on DIAMOND hits
+#'   and on HMM jobs run before 2.90.0. The HMM TSV from `job_download()`
+#'   has 8 more columns after `calibration_status`: read it by header name.
+#'   For `pathway_analysis`
 #'   one row per pathway step (`present`, the best hit); for
 #'   `annotate_list` your table's rows with PlasticDB's columns added; for
 #'   `build_tree` a `plasticdb_tree`: `newick` (the cladogram as Newick
