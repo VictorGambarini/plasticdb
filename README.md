@@ -166,6 +166,14 @@ release you used, plus the PlasticDB paper. `cite()` returns both as a
 
 `citation("plasticdb")` cites this package.
 
+## Provenance of the code
+
+Assisted-by: Claude (Anthropic). Most of this package's code, tests and
+documentation were written with the Claude Code assistant, directed and
+reviewed by the maintainer, who is responsible for it. Commits it helped
+write carry a `Co-Authored-By: Claude` trailer. No third-party code is copied
+into the package; all of it is distributed under the package's MIT licence.
+
 ## Development
 
 ```r

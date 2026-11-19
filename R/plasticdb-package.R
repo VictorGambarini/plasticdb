@@ -14,5 +14,9 @@
 #' The code is MIT-licensed. **The PlasticDB data is licensed CC BY 4.0**:
 #' cite the dataset release you used ([cite()]) and the PlasticDB paper.
 #'
+#' Assisted-by: Claude (Anthropic). Most of the code, tests and documentation
+#' were written with the Claude Code assistant, directed and reviewed by the
+#' maintainer, who is responsible for them.
+#'
 #' @keywords internal
 "_PACKAGE"

@@ -20,10 +20,15 @@ cite it. Errors are classed conditions: see \link{plasticdb-conditions}.
 
 The code is MIT-licensed. \strong{The PlasticDB data is licensed CC BY 4.0}:
 cite the dataset release you used (\code{\link[=cite]{cite()}}) and the PlasticDB paper.
+
+Assisted-by: Claude (Anthropic). Most of the code, tests and documentation
+were written with the Claude Code assistant, directed and reviewed by the
+maintainer, who is responsible for them.
 }
 \seealso{
 Useful links:
 \itemize{
+  \item \url{https://victorgambarini.github.io/plasticdb-r/}
   \item \url{https://github.com/VictorGambarini/plasticdb-r}
   \item \url{https://v2.plasticdb.org}
   \item Report bugs at \url{https://github.com/VictorGambarini/plasticdb-r/issues}
