@@ -36,11 +36,11 @@ Useful links:
 
 }
 \author{
-\strong{Maintainer}: Victor Gambarini \email{victor.gambarini@gmail.com}
+\strong{Maintainer}: Victor Gambarini \email{victor.gambarini@gmail.com} (\href{https://orcid.org/0000-0002-5639-6820}{ORCID})
 
 Authors:
 \itemize{
-  \item Victor Gambarini \email{victor.gambarini@gmail.com}
+  \item Victor Gambarini \email{victor.gambarini@gmail.com} (\href{https://orcid.org/0000-0002-5639-6820}{ORCID})
 }
 
 }

@@ -256,8 +256,9 @@ res
 if (nzchar(Sys.getenv("PLASTICDB_API_KEY"))) {
     client <- plasticdb_client()
     genome <- tempfile(fileext = ".faa")
-    writeLines(c(">p1", "MNFPRASRLMQAAVLGGLMAVSAAATAQTNPYARGPNPTAASLEASAGPF"),
-        genome)
+    seq <- paste0("MNFPRASRLMQAAVLGGLMAVSAAATAQ",
+        "TNPYARGPNPTAASLEASAGPF")
+    writeLines(c(">p1", seq), genome)
     job <- annotate_genome(genome, client = client)
     job <- wait_job(job, client = client)
     hits <- job_results(job, client = client)
