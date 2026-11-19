@@ -1,7 +1,7 @@
 Package: plasticdb
 Type: Package
 Title: Client for the PlasticDB Plastic Biodegradation Database
-Version: 0.99.3
+Version: 0.99.4
 Authors@R:
     person("Victor", "Gambarini", role = c("aut", "cre"),
            email = "victor.gambarini@gmail.com")
@@ -17,8 +17,8 @@ Description: Query PlasticDB (<https://v2.plasticdb.org>), a curated database of
     or 'Biostrings' sets. The data is licensed CC BY 4.0: cite() returns the
     citation for the release used.
 License: MIT + file LICENSE
-URL: https://victorgambarini.github.io/plasticdb-r/, https://github.com/VictorGambarini/plasticdb-r, https://v2.plasticdb.org
-BugReports: https://github.com/VictorGambarini/plasticdb-r/issues
+URL: https://victorgambarini.github.io/plasticdb/, https://github.com/VictorGambarini/plasticdb, https://v2.plasticdb.org
+BugReports: https://github.com/VictorGambarini/plasticdb/issues
 Encoding: UTF-8
 Imports:
     BiocFileCache,

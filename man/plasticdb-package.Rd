@@ -28,10 +28,10 @@ maintainer, who is responsible for them.
 \seealso{
 Useful links:
 \itemize{
-  \item \url{https://victorgambarini.github.io/plasticdb-r/}
-  \item \url{https://github.com/VictorGambarini/plasticdb-r}
+  \item \url{https://victorgambarini.github.io/plasticdb/}
+  \item \url{https://github.com/VictorGambarini/plasticdb}
   \item \url{https://v2.plasticdb.org}
-  \item Report bugs at \url{https://github.com/VictorGambarini/plasticdb-r/issues}
+  \item Report bugs at \url{https://github.com/VictorGambarini/plasticdb/issues}
 }
 
 }

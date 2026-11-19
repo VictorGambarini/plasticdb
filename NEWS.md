@@ -1,5 +1,11 @@
 # plasticdb (development)
 
+# plasticdb 0.99.4
+
+The repository is renamed `VictorGambarini/plasticdb` (Bioconductor needs it to
+match the package name); the site moves to
+<https://victorgambarini.github.io/plasticdb/>. No code changes.
+
 # plasticdb 0.99.3
 
 Adapted to server 2.90.0 (the contract is re-vendored).

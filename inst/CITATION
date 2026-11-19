@@ -8,7 +8,7 @@ c(
         author = person("Victor", "Gambarini"),
         year = format(Sys.Date(), "%Y"),
         note = paste("R package version", pkgVersion),
-        url = "https://github.com/VictorGambarini/plasticdb-r"
+        url = "https://github.com/VictorGambarini/plasticdb"
     ),
     bibentry(
         bibtype = "Article",
