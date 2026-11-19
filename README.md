@@ -11,13 +11,13 @@ It mirrors the Python client,
 
 ## Install
 
-Documentation: <https://victorgambarini.github.io/plasticdb-r/> (the Python
+Documentation: <https://victorgambarini.github.io/plasticdb/> (the Python
 client's is at <https://victorgambarini.github.io/plasticdb-py/>).
 
 ```r
 # install.packages("pak")
-pak::pak("VictorGambarini/plasticdb-r")
-# or: remotes::install_github("VictorGambarini/plasticdb-r")
+pak::pak("VictorGambarini/plasticdb")
+# or: remotes::install_github("VictorGambarini/plasticdb")
 ```
 
 A Bioconductor release is planned; then

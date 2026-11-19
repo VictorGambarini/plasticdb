@@ -63,7 +63,7 @@ BiocManager::install("plasticdb")
 ```
 
 Until it is in Bioconductor, install it from GitHub:
-`BiocManager::install("VictorGambarini/plasticdb-r")`.
+`BiocManager::install("VictorGambarini/plasticdb")`.
 
 ```{r library}
 library(plasticdb)
