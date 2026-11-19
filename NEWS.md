@@ -1,3 +1,8 @@
+# plasticdb (development)
+
+* Security hardening: GitHub Actions are pinned to commit SHAs, Dependabot keeps
+  them current, and `SECURITY.md` describes private vulnerability reporting.
+
 # plasticdb 0.99.2
 
 Adapted to server 2.87.1, 2.88.0 and 2.89.0 (the contract is re-vendored).
